@@ -226,8 +226,9 @@ module I2C_Master #(
                                 Stop_next  = 1'b0;
                                 state_next = STOP;
                             end else if (ack_error_reg) begin
+                                // NAK received: assert tx_done and go to STOP sequence
                                 tx_ready = 1'b1;
-                                tx_done  = 1'b1;
+                                tx_done = 1'b1;
                                 state_next = STOP;
                             end else begin
                                 tx_ready = 1'b1;
@@ -301,9 +302,9 @@ module I2C_Master #(
                                 Stop_next  = 1'b0;
                                 state_next = STOP;
                             end else if (ack_error_reg) begin
-                                tx_done      = 1'b1;
-                                tx_ready     = 1'b1;
-                                state_next   = STOP;
+                                tx_done    = 1'b1;
+                                tx_ready   = 1'b1;
+                                state_next = STOP;
                             end else if (ReStart_reg) begin
                                 tx_data_next = tx_data;
                                 LB_next      = I2C_Last_Byte;
@@ -415,12 +416,12 @@ module I2C_Master #(
                             tx_done = 1'b1;
                             tx_ready = 1'b1;
                             p_state_next = PHASE1;
-                            if (ReStart_reg) begin
+                            if (ack_error_reg) begin
+                                ack_error  = 1'b1;
+                                state_next = IDLE;
+                            end else if (ReStart_reg) begin
                                 ReStart_next = 1'b0;
                                 state_next   = START;
-                            end else if (ack_error_reg) begin
-                                ack_error = 1'b1;
-                                state_next = IDLE;
                             end else state_next = IDLE;
                         end
                     end
