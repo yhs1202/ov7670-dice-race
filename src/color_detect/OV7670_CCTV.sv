@@ -1,26 +1,27 @@
 `timescale 1ns / 1ps
 
 //=============================================================================
-// Module: OV7670_CCTV (Enhanced with Color Detection Mode)
-// Description: Dual-mode camera system with switch control
+// Module: OV7670_CCTV (Triple-Mode Camera System)
+// Description: Advanced camera system with three operational modes
 //
-// Mode Control:
-//   - mode_select = 0: Normal camera view (original functionality)
-//   - mode_select = 1: Color detection mode with ROI overlay
+// Mode Control (SW[1:0]):
+//   - 2'b00 (SW off): Normal camera view
+//   - 2'b01 (SW[0] on): Color detection mode with ROI overlay
+//   - 2'b10 (SW[1] on): ASCII art filter (Matrix style)
+//   - 2'b11 (both on): Reserved (defaults to ASCII mode)
 //
 // LED Indicators:
-//   - led[0]: Mode (0=Normal, 1=Color Detection)
-//   - led[1]: RED detected
-//   - led[2]: GREEN detected
-//   - led[3]: BLUE detected
+//   Mode 0: LED[0]=OFF, LED[1-3]=OFF
+//   Mode 1: LED[0]=ON, LED[1]=RED, LED[2]=GREEN, LED[3]=BLUE
+//   Mode 2: LED[0]=OFF, LED[1]=ON (ASCII mode indicator)
 //=============================================================================
 
 module OV7670_CCTV (
     input  logic       clk,
     input  logic       reset,
     
-    // Mode control
-    input  logic       mode_select,  // 0=Normal, 1=Color Detection
+    // Mode control (2-bit for 3 modes)
+    input  logic [1:0] mode_select,  // SW[1:0]: 00=Normal, 01=Color, 10=ASCII
     
     // OV7670 camera interface
     output logic       xclk,
@@ -40,7 +41,7 @@ module OV7670_CCTV (
     output tri         SCL,
     inout  tri         SDA,
     
-    // LED indicators (color detection status)
+    // LED indicators
     output logic [3:0] led
 );
     //=========================================================================
@@ -57,6 +58,21 @@ module OV7670_CCTV (
     logic [15:0] wData;
 
     assign xclk = sys_clk;
+    
+    //=========================================================================
+    // Mode decoding
+    //=========================================================================
+    localparam MODE_NORMAL = 2'b00;
+    localparam MODE_COLOR  = 2'b01;
+    localparam MODE_ASCII  = 2'b10;
+    
+    logic is_normal_mode;
+    logic is_color_mode;
+    logic is_ascii_mode;
+    
+    assign is_normal_mode = (mode_select == MODE_NORMAL);
+    assign is_color_mode  = (mode_select == MODE_COLOR);
+    assign is_ascii_mode  = (mode_select == MODE_ASCII) || (mode_select == 2'b11);
     
     //=========================================================================
     // Normal mode signals (original path)
@@ -98,6 +114,13 @@ module OV7670_CCTV (
     logic [3:0]  b_color_mode;
     
     //=========================================================================
+    // ASCII filter mode signals
+    //=========================================================================
+    logic [3:0]  r_ascii_mode;
+    logic [3:0]  g_ascii_mode;
+    logic [3:0]  b_ascii_mode;
+    
+    //=========================================================================
     // ROI Configuration
     //=========================================================================
     localparam ROI_X_START = 10'd100;
@@ -129,7 +152,7 @@ module OV7670_CCTV (
     );
 
     //=========================================================================
-    // Mode Selection: Normal or Color Detection
+    // Mode Selection: Normal, Color Detection, or ASCII Filter
     //=========================================================================
     
     // Normal mode uses original ImgMemReader
@@ -144,7 +167,7 @@ module OV7670_CCTV (
         .b_port (b_normal)
     );
     
-    // Color detection mode uses enhanced reader
+    // Color detection & ASCII modes use enhanced reader (for RGB888)
     ImgMemReader_ColorDetect U_Img_Reader_Color (
         .clk        (sys_clk),
         .reset      (reset),
@@ -185,7 +208,7 @@ module OV7670_CCTV (
     ) U_Color_Detector (
         .clk              (sys_clk),
         .reset            (reset),
-        .pixel_valid      (pixel_valid & mode_select),  // Only active in color mode
+        .pixel_valid      (pixel_valid & is_color_mode),  // Only active in color mode
         .frame_start      (frame_start),
         .x_coord          (pixel_x),
         .y_coord          (pixel_y),
@@ -242,19 +265,88 @@ module OV7670_CCTV (
     );
     
     //=========================================================================
-    // Output Multiplexer: Switch between modes
+    // ASCII Filter Pipeline (only active in ASCII mode)
     //=========================================================================
-    assign r_port = mode_select ? r_color_mode : r_normal;
-    assign g_port = mode_select ? g_color_mode : g_normal;
-    assign b_port = mode_select ? b_color_mode : b_normal;
+    ASCII_Filter #(
+        .CHAR_WIDTH  (4'd8),
+        .CHAR_HEIGHT (4'd8)
+    ) U_ASCII_Filter (
+        .clk            (sys_clk),
+        .reset          (reset),
+        .x_coord        (x_pixel),
+        .y_coord        (y_pixel),
+        .display_enable (DE),
+        .pixel_r_in     (r_raw),
+        .pixel_g_in     (g_raw),
+        .pixel_b_in     (b_raw),
+        .pixel_r8       (pixel_r8),
+        .pixel_g8       (pixel_g8),
+        .pixel_b8       (pixel_b8),
+        .pixel_valid    (pixel_valid),
+        .pixel_r_out    (r_ascii_mode),
+        .pixel_g_out    (g_ascii_mode),
+        .pixel_b_out    (b_ascii_mode)
+    );
     
     //=========================================================================
-    // LED Indicators
+    // Output Multiplexer: Switch between 3 modes
     //=========================================================================
-    assign led[0] = mode_select;  // Mode indicator
-    assign led[1] = mode_select && (stable_color == 2'b01);  // RED
-    assign led[2] = mode_select && (stable_color == 2'b10);  // GREEN
-    assign led[3] = mode_select && (stable_color == 2'b11);  // BLUE
+    always_comb begin
+        case (mode_select)
+            MODE_NORMAL: begin
+                r_port = r_normal;
+                g_port = g_normal;
+                b_port = b_normal;
+            end
+            MODE_COLOR: begin
+                r_port = r_color_mode;
+                g_port = g_color_mode;
+                b_port = b_color_mode;
+            end
+            MODE_ASCII: begin
+                r_port = r_ascii_mode;
+                g_port = g_ascii_mode;
+                b_port = b_ascii_mode;
+            end
+            default: begin  // 2'b11 also goes to ASCII
+                r_port = r_ascii_mode;
+                g_port = g_ascii_mode;
+                b_port = b_ascii_mode;
+            end
+        endcase
+    end
+    
+    //=========================================================================
+    // LED Indicators (mode-dependent)
+    //=========================================================================
+    always_comb begin
+        case (mode_select)
+            MODE_NORMAL: begin
+                led[0] = 1'b0;  // All LEDs off in normal mode
+                led[1] = 1'b0;
+                led[2] = 1'b0;
+                led[3] = 1'b0;
+            end
+            MODE_COLOR: begin
+                led[0] = 1'b1;  // Mode indicator
+                led[1] = (stable_color == 2'b01);  // RED
+                led[2] = (stable_color == 2'b10);  // GREEN
+                led[3] = (stable_color == 2'b11);  // BLUE
+            end
+            MODE_ASCII: begin
+                led[0] = 1'b0;
+                led[1] = 1'b1;  // ASCII mode indicator
+                led[2] = 1'b0;
+                led[3] = 1'b0;
+            end
+            default: begin  // 2'b11
+                led[0] = 1'b0;
+                led[1] = 1'b1;
+                led[2] = 1'b0;
+                led[3] = 1'b0;
+            end
+        endcase
+    end
 
     frame_buffer U_Frame_Buffer (
         .wclk (pclk),

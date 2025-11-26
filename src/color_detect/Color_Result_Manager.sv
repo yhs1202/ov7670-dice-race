@@ -26,7 +26,7 @@ module Color_Result_Manager #(
     
     // Output to Game FSM (stable, filtered)
     output logic [1:0]  stable_color,      // Filtered color result
-    output logic [1:0]  movement_steps,    // 0=none, 1/2/3=steps
+    //output logic [1:0]  movement_steps,    // 0=none, 1/2/3=steps
     output logic        result_ready,      // Pulse when stable result available
     
     // Debug outputs
@@ -146,22 +146,22 @@ module Color_Result_Manager #(
     //=========================================================================
     // Color to Movement Mapping (for future game FSM)
     //=========================================================================
-    logic [1:0] movement_steps_reg;
-    
-    always_comb begin
-        case (stable_color_reg)
-            COLOR_RED:   movement_steps_reg = 2'd1;  // Red = 1 step
-            COLOR_GREEN: movement_steps_reg = 2'd2;  // Green = 2 steps
-            COLOR_BLUE:  movement_steps_reg = 2'd3;  // Blue = 3 steps
-            default:     movement_steps_reg = 2'd0;  // None = no movement
-        endcase
-    end
+    //logic [1:0] movement_steps_reg;
+    //
+    //always_comb begin
+    //    case (stable_color_reg)
+    //        COLOR_RED:   movement_steps_reg = 2'd1;  // Red = 1 step
+    //        COLOR_GREEN: movement_steps_reg = 2'd2;  // Green = 2 steps
+    //        COLOR_BLUE:  movement_steps_reg = 2'd3;  // Blue = 3 steps
+    //        default:     movement_steps_reg = 2'd0;  // None = no movement
+    //    endcase
+    //end
     
     //=========================================================================
     // Output Assignments
     //=========================================================================
     assign stable_color = stable_color_reg;
-    assign movement_steps = movement_steps_reg;
+    //assign movement_steps = movement_steps_reg;
     assign result_ready = result_ready_reg;
     assign stable_confidence = stable_confidence_reg;
     
