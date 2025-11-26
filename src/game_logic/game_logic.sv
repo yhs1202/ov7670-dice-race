@@ -6,8 +6,8 @@ module game_logic (
     input  logic start_btn,
 
     // dice interface (from camera processor)
-    input  logic        dice_valid,
-    input  logic [1:0]  dice_value,     // expected 1~3
+    input  logic        dice_valid,   // (../color_detect/Color_Result_Manager.sv: result_ready)
+    input  logic [1:0]  dice_value,   // expected 1~3, (../color_detect/Color_Result_Manager.sv: stable_color)
 
     // game status output
     // output logic [$clog2(640)-1:0]  p1_x_pos,   // player 1 position for display (0~640)
