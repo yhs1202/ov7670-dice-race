@@ -9,7 +9,7 @@ XDC := $(wildcard constr/*.xdc)
 
 .PHONY: all help check build sim sim_gui bit clean veryclean
 
-all: bit
+all: build
 
 help:
 	@echo "Targets:"
