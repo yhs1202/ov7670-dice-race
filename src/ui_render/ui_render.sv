@@ -10,16 +10,18 @@ module ui_render (
     input  logic       clk,
     input  logic [9:0] x,          // 0 ~ 639
     input  logic [9:0] y,          // 0 ~ 479
-    input  logic [9:0] player_x,   // 플레이어 x 위치
-    input  logic [9:0] player_y,   // 플레이어 y 위치
+    input  logic [9:0] player1_x,   // 플레이어 x 위치
+    input  logic [9:0] player1_y,   // 플레이어 y 위치
+    input  logic [9:0] player2_x,   // 플레이어 x 위치
+    input  logic [9:0] player2_y,   // 플레이어 y 위치
     output logic [7:0] r,          // Red
     output logic [7:0] g,          // Green
     output logic [7:0] b           // Blue
 );
 
     // 렌더러 신호
-    rgb_t  sky_color, grass_color, dirt_color, player_color;
-    logic  sky_en, grass_en, dirt_en, player_en;
+    rgb_t  sky_color, grass_color, dirt_color, player1_color, player2_color;
+    logic  sky_en, grass_en, dirt_en, player1_en, player2_en;
 
     // 배경 렌더러
     sky_renderer sky_inst (
@@ -41,12 +43,19 @@ module ui_render (
     );
 
     // 플레이어 렌더러
-    player_renderer player_inst (
+    player_renderer player1_inst (
         .x(x), .y(y),
-        .player_x(player_x),
-        .player_y(player_y),
-        .color(player_color),
-        .enable(player_en)
+        .player_x(player1_x),
+        .player_y(player1_y),
+        .color(player1_color),
+        .enable(player1_en)
+    );
+    player_renderer player2_inst (
+        .x(x), .y(y),
+        .player_x(player2_x),
+        .player_y(player2_y),
+        .color(player2_color),
+        .enable(player2_en)
     );
 
     // 레이어 합성 (우선순위: player > dirt > grass > sky)
@@ -67,8 +76,12 @@ module ui_render (
             final_color = dirt_color;
         end
 
-        if (player_en) begin
-            final_color = player_color;
+        if (player1_en) begin
+            final_color = player1_color;
+        end
+
+        if (player2_en) begin
+            final_color = player2_color;
         end
     end
 

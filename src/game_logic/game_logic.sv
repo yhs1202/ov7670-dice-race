@@ -15,7 +15,7 @@ module game_logic (
     output logic [3:0]  p1_pos, // positions of players (0~10)
     output logic [3:0]  p2_pos, // positions of players (0~10)
     output logic        winner_valid,
-    output logic        winner_id,      // 1 or 2
+    output logic        winner_id,      // p1=0, p2=1
 
     // LED timeout display (16 LEDs)
     output logic [15:0] led_output

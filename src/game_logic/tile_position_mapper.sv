@@ -7,16 +7,16 @@ module tile_position_mapper (
 );
     always_comb begin
         case(tile_idx)
-            4'd0: x = 20;
-            4'd1: x = 60;
-            4'd2: x = 100;
-            4'd3: x = 140;
-            4'd4: x = 180;
-            4'd5: x = 220;
-            4'd6: x = 260;
-            4'd7: x = 300;
-            4'd8: x = 340;
-            4'd9: x = 380;
+            4'd0: x = 20;   // starting position
+            4'd1: x = 80;
+            4'd2: x = 140;
+            4'd3: x = 200;
+            4'd4: x = 260;
+            4'd5: x = 320;
+            4'd6: x = 380;
+            4'd7: x = 440;
+            4'd8: x = 500;
+            4'd9: x = 560;
             default: x = 0;
         endcase
         y = 200;
