@@ -1,0 +1,34 @@
+# Vivado project files
+*.jou
+*.log
+*.str
+*.xml
+*.html
+*.wdb
+*.ltx
+*.dcp
+*.rpt
+*.pb
+*.bit
+*.bin
+*.mcs
+*.sdk
+*.xsa
+*.xpr
+*.dmp
+
+# Vivado work dirs
+**/.Xil/
+**/.cache/
+**/.hw/
+**/.runs/
+**/.sim/
+**/.gen/
+**/out/
+
+# IDE/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.nvim/
