@@ -121,8 +121,8 @@ module game_logic (
                 // UPDATE_POS: apply movement to player
                 S_UPDATE_POS: begin
                     pos_valid <= 1;
-                    if (turn_reg == 0) p1_pos <= next_pos;
-                    else p2_pos <= next_pos;
+                    if (turn_reg == 0) p1_pos <= (next_pos >= 9) ? 9 : next_pos;
+                    else p2_pos <= (next_pos >= 9) ? 9 : next_pos;
                 end                 
 
                 S_CHECK_EVENT: begin
@@ -137,7 +137,7 @@ module game_logic (
                     else if (p1_pos == 4 || p2_pos == 4) event_flag <= 4'd4; // event 4 flag
                     else if (p1_pos == 6 || p2_pos == 6) event_flag <= 4'd6; // event 6 flag
                     else if (p1_pos == 8 || p2_pos == 8) event_flag <= 4'd8; // event 8 flag
-                    else if (p1_pos >= 10 || p2_pos >= 10) begin
+                    else if (p1_pos >= 9 || p2_pos >= 9) begin
                         winner_valid <= 1;
                         winner_id    <= (turn_reg == 0) ? 0 : 1;
                     end
@@ -163,7 +163,7 @@ module game_logic (
                 S_WIN: begin
                     // Game over effects can be added here if needed
                     led_output_reg <= (winner_id == 0) ? 16'hF0F0 : 16'h0F0F; // indicate winner
-                    event_flag <= 4'd10; // win event
+                    event_flag <= 4'd9; // win event
                 end
 
             endcase
@@ -205,7 +205,7 @@ module game_logic (
             end
 
             S_CHECK_EVENT: begin
-                if (p1_pos >= 10 || p2_pos >= 10)
+                if (p1_pos >= 9 || p2_pos >= 9)
                     next_state = S_WIN;
                 else
                     next_state = S_START_EVENT;
