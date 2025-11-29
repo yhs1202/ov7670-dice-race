@@ -14,13 +14,11 @@
 // Features:
 //   - 3-frame voting for noise rejection (configurable)
 //   - Stable output for FSM state transitions
-//   - Movement value mapping (RED=1, GREEN=2, BLUE=3 steps)
 //   - Confidence threshold filtering
 //   - WHITE detection for turn transition
 //
 // Output Signals for Game Logic:
 //   - stable_color:      Filtered dominant color (00=NONE, 01=RED, 10=GREEN, 11=BLUE)
-//   - movement_steps:    Dice roll value (0/1/2/3)
 //   - result_ready:      Pulse when valid R/G/B color detected
 //   - turn_end:          Pulse when WHITE background detected (turn complete)
 //   - current_state_white: Level signal - HIGH when currently in WHITE/IDLE state
@@ -42,7 +40,6 @@ module Color_Result_Manager #(
     
     // Output to Game Logic (directly connect these to your Game FSM)
     output logic [1:0]  stable_color,      // 00=NONE, 01=RED, 10=GREEN, 11=BLUE
-    output logic [1:0]  movement_steps,    // 0=none, 1=RED, 2=GREEN, 3=BLUE
     output logic        result_ready,      // Pulse: valid dice color detected
     output logic        turn_end,          // Pulse: white background (turn complete)
     output logic        current_state_white, // Level: currently detecting WHITE background
@@ -199,24 +196,9 @@ module Color_Result_Manager #(
     end
     
     //=========================================================================
-    // Color to Movement Mapping (for future game FSM)
-    //=========================================================================
-    logic [1:0] movement_steps_reg;
-    
-    always_comb begin
-        case (stable_color_reg)
-            COLOR_RED:   movement_steps_reg = 2'd1;  // Red = 1 step
-            COLOR_GREEN: movement_steps_reg = 2'd2;  // Green = 2 steps
-            COLOR_BLUE:  movement_steps_reg = 2'd3;  // Blue = 3 steps
-            default:     movement_steps_reg = 2'd0;  // None = no movement
-        endcase
-    end
-    
-    //=========================================================================
     // Output Assignments
     //=========================================================================
     assign stable_color = stable_color_reg;
-    assign movement_steps = movement_steps_reg;
     assign result_ready = result_ready_reg;
     assign turn_end = turn_end_reg;
     assign current_state_white = current_state_white_reg;

@@ -34,12 +34,6 @@
 //                              2'b10 = GREEN  
 //                              2'b11 = BLUE
 //
-//   [1:0] movement_steps     - Movement command based on detected color
-//                              2'd0 = No movement (NONE/WHITE)
-//                              2'd1 = 1 step (RED)
-//                              2'd2 = 2 steps (GREEN)
-//                              2'd3 = 3 steps (BLUE)
-//
 //        color_result_ready  - Single-cycle pulse when R/G/B color is detected
 //                              Use this to trigger dice roll acceptance
 //                              NOTE: Does NOT pulse for WHITE or NONE
@@ -51,14 +45,14 @@
 //  [15:0] color_confidence   - Pixel count of detected color (for debugging)
 //                              Higher value = more confident detection
 //
-// Recommended Game Flow:
-//   1. Game FSM waits in WAIT_COLOR state
-//   2. Player throws dice on white background
-//   3. color_result_ready pulses -> Game FSM captures movement_steps
-//   4. Game FSM moves piece, then waits for turn_end
-//   5. Player removes dice (white background visible)
-//   6. turn_end pulses -> Game FSM switches to next player
-//   7. Repeat from step 1
+// Game Logic 예제:
+//   1. Game FSM은 WAIT_COLOR state에서 color_result_ready 대기
+//   2. Player가 카메라에 주사위를 놓음(배경은 흰색)
+//   3. color_result_ready 펄스 -> Game FSM이 detected_color 읽음
+//   4. Game FSM이 주사위 색상에 따라 말 이동 (이동 칸 수는 Game Logic에서 결정)
+//   5. Player가 주사위를 치워서 배경이 흰색이 되도록 함
+//   6. turn_end 펄스 -> Game FSM이 턴 종료 처리
+//   7. 다음 플레이어로 턴 전환
 //
 //=============================================================================
 
@@ -88,9 +82,8 @@ module OV7670_CCTV_ColorDetect (
     // Game Logic Interface Outputs
     //=========================================================================
     output logic [1:0] detected_color,     // 00=NONE, 01=RED, 10=GREEN, 11=BLUE
-    output logic [1:0] movement_steps,     // 0=none, 1/2/3=steps
-    output logic       color_result_ready, // Pulse when R/G/B detected (dice color accepted)
-    output logic       turn_end,           // Pulse when WHITE detected (turn complete)
+    output logic       color_result_ready, // R/G/B color detected 신호
+    output logic       turn_end,           // 흰색 배경이 관찰되면, turn 종료임을 알리기 위한 신호
     output logic [15:0] color_confidence   // Detection confidence (pixel count)
 );
 
@@ -142,7 +135,6 @@ module OV7670_CCTV_ColorDetect (
     
     // Filtered color results
     logic [1:0]  stable_color;
-    logic [1:0]  movement_steps_int;
     logic        result_ready_int;
     logic        turn_end_int;
     logic [15:0] stable_confidence;
@@ -271,7 +263,6 @@ module OV7670_CCTV_ColorDetect (
         .color_confidence  (confidence_raw),
         .white_detected    (white_detected_raw),
         .stable_color      (stable_color),
-        .movement_steps    (movement_steps_int),
         .result_ready      (result_ready_int),
         .turn_end          (turn_end_int),
         .current_state_white (current_state_white),
@@ -332,10 +323,9 @@ module OV7670_CCTV_ColorDetect (
     );
     
     //=========================================================================
-    // Output assignments (for future game FSM connection)
+    // Output assignments (for Game FSM connection)
     //=========================================================================
     assign detected_color = stable_color;
-    assign movement_steps = movement_steps_int;
     assign color_result_ready = result_ready_int;
     assign turn_end = turn_end_int;
     assign color_confidence = stable_confidence;
