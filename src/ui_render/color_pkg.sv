@@ -3,7 +3,7 @@
 
 package color_pkg;
 
-    // ========================================
+    // RGB 구조체 타입 정의
     typedef struct packed {
         logic [7:0] r;
         logic [7:0] g;
@@ -17,13 +17,13 @@ package color_pkg;
     parameter rgb_t SKY_BLUE       = '{r: 8'h5D, g: 8'hAD, b: 8'hE2};  // 기본 하늘색
 
     // ========================================
-    // 잔디 색상 
+    // 잔디 색상 (Minecraft 스타일)
     // ========================================
     parameter rgb_t GRASS_BRIGHT   = '{r: 8'h7F, g: 8'hC8, b: 8'h3F};  // 밝은 초록 (윗줄)
     parameter rgb_t GRASS_GREEN    = '{r: 8'h55, g: 8'hA0, b: 8'h2F};  // 진한 초록
 
     // ========================================
-    // 흙 색상 
+    // 흙 색상 (Minecraft 스타일)
     // ========================================
     parameter rgb_t DIRT_DARK      = '{r: 8'h6B, g: 8'h4A, b: 8'h2F};  // 어두운 갈색
     parameter rgb_t DIRT_MID       = '{r: 8'h8B, g: 8'h65, b: 8'h3F};  // 중간 갈색
@@ -31,7 +31,7 @@ package color_pkg;
     parameter rgb_t DIRT_GRAY      = '{r: 8'h70, g: 8'h70, b: 8'h70};  // 회색 (돌 느낌)
 
     // ========================================
-    // 게임 오브젝트 색상 - IC 칩 캐릭터   ++ 이거는 그냥 일단 했습니다.
+    // 게임 오브젝트 색상 - IC 칩 캐릭터
     // ========================================
     parameter rgb_t IC_BLACK       = '{r: 8'h20, g: 8'h20, b: 8'h20};  // IC 몸체 (검정)
     parameter rgb_t IC_GRAY        = '{r: 8'h50, g: 8'h50, b: 8'h50};  // IC 테두리 (다크 그레이)

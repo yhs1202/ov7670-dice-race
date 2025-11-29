@@ -27,13 +27,13 @@ module top_game_logic_for_test (
     // Game Logic Signals
     logic [3:0] p1_pos;
     logic [3:0] p2_pos;
-    logic [9:0] player1_x; 
-    logic [9:0] player1_y; 
-    logic [9:0] player2_x; 
-    logic [9:0] player2_y; 
+    logic [9:0] p1_target_x, p1_target_y;
+    logic [9:0] p2_target_x, p2_target_y;
     logic winner_valid;
     logic winner_id;
     logic turn;
+    logic pos_valid;
+    logic turn_done;
 
     logic [3:0] event_flag;
 
@@ -45,14 +45,14 @@ module top_game_logic_for_test (
 
     tile_position_mapper tile_pos_mapper_inst_p1 (
         .tile_idx (p1_pos),
-        .x        (player1_x),
-        .y        (player1_y)
+        .x        (p1_target_x),
+        .y        (p1_target_y)
     );
 
     tile_position_mapper tile_pos_mapper_inst_p2 (
         .tile_idx (p2_pos),
-        .x        (player2_x),
-        .y        (player2_y)
+        .x        (p2_target_x),
+        .y        (p2_target_y)
     );
 
     // Debounce for start_btn, (Btn_U)
@@ -89,6 +89,8 @@ module top_game_logic_for_test (
         // .dice_valid (dice_valid),
         // .event_end_tick (event_end_tick),
         .dice_value (dice_value),
+        .turn_done  (turn_done),            // Connect turn_done
+        .pos_valid  (pos_valid),            // Connect pos_valid
 
         .p1_pos     (p1_pos),
         .p2_pos     (p2_pos),
@@ -105,10 +107,10 @@ module top_game_logic_for_test (
     // 1) Pixel Clock 생성 (25MHz enable)
     logic pclk;
 
-    pixel_clk_gen pixel_clk_inst (
-        .clk   (clk),
-        .reset (reset),
-        .pclk  (pclk)
+    clk_div #(.DIV_VALUE(4)) pixel_clk_inst (
+        .clk     (clk),
+        .rst     (reset),
+        .clk_out (pclk)
     );
 
     
@@ -138,12 +140,15 @@ module top_game_logic_for_test (
 
     ui_render ui_inst (
         .clk      (pclk),
+        .rst      (reset),
         .x        (x),
         .y        (y),
-        .player1_x (player1_x),
-        .player1_y (player1_y),
-        .player2_x (player2_x),
-        .player2_y (player2_y),
+        .player1_pos_x (p1_target_x),
+        .player2_pos_x (p2_target_x),
+        .pos_valid     (pos_valid),
+        .active_player (turn),
+        .winner_valid  (winner_valid),
+        .turn_done     (turn_done),
         .r        (r8),
         .g        (g8),
         .b        (b8)

@@ -11,6 +11,8 @@ module game_logic (
     input  logic        dice_valid,   // (../color_detect/Color_Result_Manager.sv: result_ready)
     input  logic [1:0]  dice_value,   // expected 1~3, (../color_detect/Color_Result_Manager.sv: stable_color)
 
+    // UI synchronization (Added for integration)
+    input  logic        turn_done,    // Signal from UI when animation is complete
 
     // game status output
     output logic [3:0]  p1_pos,         // positions of players (0~10)
@@ -19,6 +21,7 @@ module game_logic (
     output logic        winner_valid,
     output logic        winner_id,      // 0 = player1, 1 = player2
     output logic        turn,           // 0 = player1, 1 = player2
+    output logic        pos_valid,      // Position update signal (Added as output)
 
     // LED timeout display (16 LEDs)
     output logic [15:0] led_output,
@@ -40,6 +43,7 @@ module game_logic (
         S_IDLE,
         S_WAIT_DICE,
         S_UPDATE_POS,
+        S_WAIT_ANIM,    // Added for UI integration
         S_CHECK_EVENT,
         S_START_EVENT,
         S_NEXT_TURN,
@@ -50,7 +54,7 @@ module game_logic (
 
     // Internal Registers
     logic [3:0] next_pos;
-    logic pos_valid;
+    // logic pos_valid; // Used as output
     logic turn_reg, turn_next;
 
     // Timeout + LED
@@ -60,6 +64,7 @@ module game_logic (
 
 
     assign led_output = led_output_reg;
+    assign turn = turn_reg; // Connect internal reg to output
 
     // FND Controller Instance for displaying current position
     fnd_controller U_FND_CTRL (
@@ -80,6 +85,7 @@ module game_logic (
             winner_id    <= 0;
             turn_reg     <= 0;
             pos_valid    <= 0;
+            event_flag   <= 0;
 
             // LED + timer init
             time_elapsed <= 0;
@@ -123,9 +129,16 @@ module game_logic (
                     pos_valid <= 1;
                     if (turn_reg == 0) p1_pos <= (next_pos >= 9) ? 9 : next_pos;
                     else p2_pos <= (next_pos >= 9) ? 9 : next_pos;
-                end                 
+                end
+
+                // WAIT_ANIM: wait for UI to finish moving the player
+                S_WAIT_ANIM: begin
+                    pos_valid <= 1; // Keep high for CDC
+                    // Just wait for turn_done signal
+                end
 
                 S_CHECK_EVENT: begin
+                    pos_valid <= 0;
                     if (p1_pos == 2 || p2_pos == 2) event_flag <= 4'd2; // event 2 flag
                     else if (p1_pos == 3 || p2_pos == 3) begin
                         event_flag <= 4'd3; // event 3 flag
@@ -144,7 +157,6 @@ module game_logic (
                     else begin
                         event_flag <= 4'd0; // no event
                     end
-                    pos_valid <= 0;
                 end
 
                 S_START_EVENT: begin
@@ -163,7 +175,7 @@ module game_logic (
                 S_WIN: begin
                     // Game over effects can be added here if needed
                     led_output_reg <= (winner_id == 0) ? 16'hF0F0 : 16'h0F0F; // indicate winner
-                    event_flag <= 4'd9; // win event
+                    event_flag <= 4'd10; // win event
                 end
 
             endcase
@@ -201,7 +213,14 @@ module game_logic (
             end
 
             S_UPDATE_POS: begin
-                next_state = S_CHECK_EVENT;
+                next_state = S_WAIT_ANIM; // Go to wait anim
+            end
+
+            S_WAIT_ANIM: begin
+                if (turn_done)
+                    next_state = S_CHECK_EVENT;
+                else
+                    next_state = S_WAIT_ANIM;
             end
 
             S_CHECK_EVENT: begin

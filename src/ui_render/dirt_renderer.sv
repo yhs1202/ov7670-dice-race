@@ -1,6 +1,6 @@
 // dirt_renderer.sv
 // 흙 렌더러 (150 ~ 180px, 높이 30px)
-
+// Minecraft 스타일 흙 패턴
 
 import color_pkg::*;
 
@@ -35,7 +35,7 @@ module dirt_renderer (
             endcase
         end else begin
             enable = 1'b0;
-            color = BLACK;  // 돈케어
+            color = BLACK;  // don't care
         end
     end
 

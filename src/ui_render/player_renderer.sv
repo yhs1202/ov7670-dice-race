@@ -8,6 +8,7 @@ module player_renderer (
     input  logic [9:0] y,           // 화면 y 좌표
     input  logic [9:0] player_x,    // 플레이어 x 위치
     input  logic [9:0] player_y,    // 플레이어 y 위치
+    input  logic       player_id,   // 0=Player1(빨강), 1=Player2(파랑)
     output rgb_t       color,       // RGB 출력
     output logic       enable       // 이 픽셀 그릴지 여부
 );
@@ -52,13 +53,14 @@ module player_renderer (
                     end
                 end
 
-                // Row 2-3: 빨간 점 (방향 표시)
+                // Row 2-3: 색상 점 (플레이어 구분)
                 4'd2, 4'd3: begin
                     if (sprite_x == 1 || sprite_x == 14) begin
                         color = IC_GRAY;
                         enable = 1'b1;
                     end else if (sprite_x >= 6 && sprite_x <= 7) begin
-                        color = IC_RED;  // 빨간 점
+                        // Player 1: 빨강, Player 2: 파랑
+                        color = player_id ? '{r: 8'h00, g: 8'h00, b: 8'hFF} : IC_RED;
                         enable = 1'b1;
                     end else if (sprite_x >= 2 && sprite_x <= 13) begin
                         color = IC_BLACK;
