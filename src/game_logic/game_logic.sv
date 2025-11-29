@@ -4,10 +4,13 @@ module game_logic (
     input  logic clk,
     input  logic reset,
     input  logic start_btn,
+    // Event end tick (from event processor)
+    input  logic        event_end_tick,
 
     // dice interface (from camera processor)
     input  logic        dice_valid,   // (../color_detect/Color_Result_Manager.sv: result_ready)
     input  logic [1:0]  dice_value,   // expected 1~3, (../color_detect/Color_Result_Manager.sv: stable_color)
+
 
     // game status output
     output logic [3:0]  p1_pos,         // positions of players (0~10)
@@ -22,13 +25,15 @@ module game_logic (
 
     // FND display output
     output logic [3:0]  fnd_com,
-    output logic [7:0]  fnd_data
+    output logic [7:0]  fnd_data,
+
+    // Filter event flags
+    output logic [3:0]  event_flag  
 );
 
     // Constants
     localparam int SEC = 100_000_000; // 1 sec (assuming 100 MHz clock)
     // localparam int SEC = 50_000; // tb
-
 
     // FSM Declaration
     typedef enum logic [2:0] {
@@ -36,6 +41,7 @@ module game_logic (
         S_WAIT_DICE,
         S_UPDATE_POS,
         S_CHECK_EVENT,
+        S_START_EVENT,
         S_NEXT_TURN,
         S_WIN
     } state_t;
@@ -120,20 +126,29 @@ module game_logic (
                 end                 
 
                 S_CHECK_EVENT: begin
-                    if (p1_pos == 3 || p2_pos == 3) begin
-                        // FILTER EVENT NEEDED, will be implemented later
-                        led_output_reg <= 16'hF0F0; // indicate event tile
+                    if (p1_pos == 2 || p2_pos == 2) event_flag <= 4'd2; // event 2 flag
+                    else if (p1_pos == 3 || p2_pos == 3) begin
+                        event_flag <= 4'd3; // event 3 flag
                         if (turn_reg == 0)
                             p1_pos <= 0;
                         else
                             p2_pos <= 0;
-                    end
-
-                    if (next_pos >= 10) begin
+                    end 
+                    else if (p1_pos == 4 || p2_pos == 4) event_flag <= 4'd4; // event 4 flag
+                    else if (p1_pos == 6 || p2_pos == 6) event_flag <= 4'd6; // event 6 flag
+                    else if (p1_pos == 8 || p2_pos == 8) event_flag <= 4'd8; // event 8 flag
+                    else if (p1_pos >= 10 || p2_pos >= 10) begin
                         winner_valid <= 1;
                         winner_id    <= (turn_reg == 0) ? 0 : 1;
                     end
+                    else begin
+                        event_flag <= 4'd0; // no event
+                    end
                     pos_valid <= 0;
+                end
+
+                S_START_EVENT: begin
+                    // Event handling can be added here if needed
                 end
 
                 // NEXT_TURN: flip turn, reset LED + timer
@@ -148,6 +163,7 @@ module game_logic (
                 S_WIN: begin
                     // Game over effects can be added here if needed
                     led_output_reg <= (winner_id == 0) ? 16'hF0F0 : 16'h0F0F; // indicate winner
+                    event_flag <= 4'd10; // win event
                 end
 
             endcase
@@ -189,12 +205,21 @@ module game_logic (
             end
 
             S_CHECK_EVENT: begin
-                if (next_pos >= 10)
+                if (p1_pos >= 10 || p2_pos >= 10)
                     next_state = S_WIN;
-                else begin
-                    next_state = S_NEXT_TURN;
+                else
+                    next_state = S_START_EVENT;
+            end
+
+            S_START_EVENT: begin
+                if (!event_flag) begin
                     turn_next = ~turn_reg;
-                end
+                    next_state = S_NEXT_TURN;
+                end else if (event_end_tick) begin
+                    turn_next = ~turn_reg;
+                    next_state = S_NEXT_TURN;
+                end else
+                    next_state = S_START_EVENT;
             end
 
             S_NEXT_TURN: begin

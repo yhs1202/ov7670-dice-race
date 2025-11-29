@@ -7,8 +7,9 @@ module top_game_logic_for_test (
     input logic reset,
 
     // drive with switches for test
-    input logic start_btn,
-    input logic dice_valid,
+    input logic start_btn,      // Test for Btn_U
+    input logic event_end_tick, // Test for Btn_R
+    input logic dice_valid,     // Test for Btn_L
     input logic [1:0] dice_value,
 
     output logic [3:0] r_port,
@@ -34,8 +35,12 @@ module top_game_logic_for_test (
     logic winner_id;
     logic turn;
 
+    logic [3:0] event_flag;
+
+    // Debounced Signals
     logic start_btn_db_out;
     logic dice_valid_db_out;
+    logic event_end_tick_db_out;
     // logic [15:0] led_output;
 
     tile_position_mapper tile_pos_mapper_inst_p1 (
@@ -66,24 +71,34 @@ module top_game_logic_for_test (
         .btn_out  (dice_valid_db_out)
     );
 
+    // Debounce for event_end_tick, for test (Btn_R)
+    btn_debounce event_end_tick_db (
+        .clk      (clk),
+        .rst      (reset),
+        .btn_in   (event_end_tick),
+        .btn_out  (event_end_tick_db_out)
+    );
+
     game_logic game_logic_inst (
         .clk        (clk),
         .reset      (reset),
         .start_btn  (start_btn_db_out),
+        .event_end_tick (event_end_tick_db_out),
         .dice_valid (dice_valid_db_out),    // for test
         // .start_btn  (start_btn),
         // .dice_valid (dice_valid),
-
+        // .event_end_tick (event_end_tick),
         .dice_value (dice_value),
+
         .p1_pos     (p1_pos),
         .p2_pos     (p2_pos),
         .winner_valid(winner_valid),
         .winner_id  (winner_id),
         .turn       (turn),
-        // .led_test   (led_test),
         .led_output (led_output),
         .fnd_com    (fnd_com),
-        .fnd_data   (fnd_data)
+        .fnd_data   (fnd_data),
+        .event_flag (event_flag)
     );
 
     ///////////////// UI Render Signals //////////////////////
