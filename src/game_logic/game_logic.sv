@@ -5,7 +5,7 @@ module game_logic (
     input  logic reset,
     input  logic start_btn,
     // Event end tick (from event processor)
-    input  logic        event_end_tick,
+    // input  logic        event_end_tick,
 
     // dice interface (from camera processor)
     input  logic        dice_valid,   // (../color_detect/Color_Result_Manager.sv: result_ready)
@@ -43,7 +43,7 @@ module game_logic (
         S_IDLE,
         S_WAIT_DICE,
         S_UPDATE_POS,
-        S_WAIT_ANIM,    // Added for UI integration
+        // S_WAIT_ANIM,    // Added for UI integration
         S_CHECK_EVENT,
         S_START_EVENT,
         S_NEXT_TURN,
@@ -127,15 +127,15 @@ module game_logic (
                 // UPDATE_POS: apply movement to player
                 S_UPDATE_POS: begin
                     pos_valid <= 1;
-                    if (turn_reg == 0) p1_pos <= (next_pos >= 9) ? 9 : next_pos;
-                    else p2_pos <= (next_pos >= 9) ? 9 : next_pos;
+                    if (turn_reg == 0) p1_pos <= (next_pos >= 10) ? 10 : next_pos;
+                    else p2_pos <= (next_pos >= 10) ? 10 : next_pos;
                 end
 
-                // WAIT_ANIM: wait for UI to finish moving the player
-                S_WAIT_ANIM: begin
-                    pos_valid <= 1; // Keep high for CDC
-                    // Just wait for turn_done signal
-                end
+                // // WAIT_ANIM: wait for UI to finish moving the player
+                // S_WAIT_ANIM: begin
+                //     pos_valid <= 1; // Keep high for CDC
+                //     // Just wait for turn_done signal
+                // end
 
                 S_CHECK_EVENT: begin
                     pos_valid <= 0;
@@ -150,7 +150,7 @@ module game_logic (
                     else if (p1_pos == 4 || p2_pos == 4) event_flag <= 4'd4; // event 4 flag
                     else if (p1_pos == 6 || p2_pos == 6) event_flag <= 4'd6; // event 6 flag
                     else if (p1_pos == 8 || p2_pos == 8) event_flag <= 4'd8; // event 8 flag
-                    else if (p1_pos >= 9 || p2_pos >= 9) begin
+                    else if (p1_pos >= 10 || p2_pos >= 10) begin
                         winner_valid <= 1;
                         winner_id    <= (turn_reg == 0) ? 0 : 1;
                     end
@@ -213,18 +213,18 @@ module game_logic (
             end
 
             S_UPDATE_POS: begin
-                next_state = S_WAIT_ANIM; // Go to wait anim
+                next_state = S_CHECK_EVENT; // Go to CHECK_EVENT after updating position
             end
 
-            S_WAIT_ANIM: begin
-                if (turn_done)
-                    next_state = S_CHECK_EVENT;
-                else
-                    next_state = S_WAIT_ANIM;
-            end
+            // S_WAIT_ANIM: begin
+            //     if (turn_done)
+            //         next_state = S_CHECK_EVENT;
+            //     else
+            //         next_state = S_WAIT_ANIM;
+            // end
 
             S_CHECK_EVENT: begin
-                if (p1_pos >= 9 || p2_pos >= 9)
+                if (p1_pos >= 10 || p2_pos >= 10)
                     next_state = S_WIN;
                 else
                     next_state = S_START_EVENT;
@@ -234,7 +234,7 @@ module game_logic (
                 if (!event_flag) begin
                     turn_next = ~turn_reg;
                     next_state = S_NEXT_TURN;
-                end else if (event_end_tick) begin
+                end else if (turn_done) begin
                     turn_next = ~turn_reg;
                     next_state = S_NEXT_TURN;
                 end else

@@ -17,6 +17,7 @@ module tile_position_mapper (
             4'd7: x = 440;
             4'd8: x = 500;
             4'd9: x = 560;
+            4'd10: x = 620; // finish line
             default: x = 0;
         endcase
         y = 120;

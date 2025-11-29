@@ -8,7 +8,7 @@ module top_game_logic_for_test (
 
     // drive with switches for test
     input logic start_btn,      // Test for Btn_U
-    input logic event_end_tick, // Test for Btn_R
+    // input logic event_end_tick, // Test for Btn_R
     input logic dice_valid,     // Test for Btn_L
     input logic [1:0] dice_value,
 
@@ -83,7 +83,7 @@ module top_game_logic_for_test (
         .clk        (clk),
         .reset      (reset),
         .start_btn  (start_btn_db_out),
-        .event_end_tick (event_end_tick_db_out),
+        // .event_end_tick (event_end_tick_db_out),
         .dice_valid (dice_valid_db_out),    // for test
         // .start_btn  (start_btn),
         // .dice_valid (dice_valid),
