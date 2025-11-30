@@ -138,19 +138,19 @@ module game_logic (
                 // end
 
                 S_CHECK_EVENT: begin
-                    pos_valid <= 0;
+                    // pos_valid <= 0;
                     if (p1_pos == 2 || p2_pos == 2) event_flag <= 4'd2; // event 2 flag
-                    else if (p1_pos == 3 || p2_pos == 3) begin
+                    if (p1_pos == 3 || p2_pos == 3) begin
                         event_flag <= 4'd3; // event 3 flag
                         if (turn_reg == 0)
                             p1_pos <= 0;
                         else
                             p2_pos <= 0;
                     end 
-                    else if (p1_pos == 4 || p2_pos == 4) event_flag <= 4'd4; // event 4 flag
-                    else if (p1_pos == 6 || p2_pos == 6) event_flag <= 4'd6; // event 6 flag
-                    else if (p1_pos == 8 || p2_pos == 8) event_flag <= 4'd8; // event 8 flag
-                    else if (p1_pos >= 10 || p2_pos >= 10) begin
+                    if (p1_pos == 4 || p2_pos == 4) event_flag <= 4'd4; // event 4 flag
+                    if (p1_pos == 6 || p2_pos == 6) event_flag <= 4'd6; // event 6 flag
+                    if (p1_pos == 8 || p2_pos == 8) event_flag <= 4'd8; // event 8 flag
+                    if (p1_pos >= 10 || p2_pos >= 10) begin
                         winner_valid <= 1;
                         winner_id    <= (turn_reg == 0) ? 0 : 1;
                     end
@@ -161,11 +161,11 @@ module game_logic (
 
                 S_START_EVENT: begin
                     // Event handling can be added here if needed
+                    pos_valid <= 0;
                 end
 
                 // NEXT_TURN: flip turn, reset LED + timer
                 S_NEXT_TURN: begin
-                    // turn <= ~turn;
                     time_elapsed <= 0;
                     sec_cnt <= 0;
                     led_output_reg <= (turn_reg == 0) ? 16'hFF00 : 16'h00FF;
