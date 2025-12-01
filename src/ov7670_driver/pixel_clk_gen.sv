@@ -11,7 +11,7 @@ module pixel_clk_gen (
         if (reset) begin
             p_counter <= 0;
         end else begin
-            if (p_counter == 3) begin
+            if (p_counter == 3) begin   
                 p_counter <= 0;
                 pclk      <= 1'b1;
             end else begin

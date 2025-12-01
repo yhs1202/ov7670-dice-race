@@ -1,42 +1,39 @@
-`timescale 1ns/1ps
+`timescale 1ns / 1ps
 
-module game_logic (
-    input  logic clk,
-    input  logic reset,
-    input  logic start_btn,
-    // Event end tick (from event processor)
-    input  logic        event_end_tick,
+module Game_Logic_Controller (
+    input logic clk,
+    input logic reset,
+    input logic start_btn,
 
     // dice interface (from camera processor)
     input  logic        dice_valid,   // (../color_detect/Color_Result_Manager.sv: result_ready)
     input  logic [1:0]  dice_value,   // expected 1~3, (../color_detect/Color_Result_Manager.sv: stable_color)
 
-    // UI synchronization (Added for integration)
-    input  logic        turn_done,    // Signal from UI when animation is complete
-
     // game status output
-    output logic [3:0]  p1_pos,         // positions of players (0~10)
-    output logic [3:0]  p2_pos,         // positions of players (0~10)
+    output logic [3:0] p1_pos,  // positions of players (0~10)
+    output logic [3:0] p2_pos,  // positions of players (0~10)
+
+    // UI synchronization (Added for integration)
+    input logic turn_done,  // Signal from UI when animation is complete
     // 
-    output logic        winner_valid,
-    output logic        winner_id,      // 0 = player1, 1 = player2
-    output logic        turn,           // 0 = player1, 1 = player2
-    output logic        pos_valid,      // Position update signal (Added as output)
+    output logic pos_valid,  // Position update signal (Added as output)
+    output logic winner_valid,
+    output logic winner_id,  // 0 = player1, 1 = player2
+    output logic turn,  // 0 = player1, 1 = player2
 
     // LED timeout display (16 LEDs)
     output logic [15:0] led_output,
 
     // FND display output
-    output logic [3:0]  fnd_com,
-    output logic [7:0]  fnd_data,
+    output logic [3:0] fnd_com,
+    output logic [7:0] fnd_data,
 
     // Filter event flags
-    output logic [3:0]  event_flag  
+    output logic [3:0] event_flag
 );
 
     // Constants
-    localparam int SEC = 100_000_000; // 1 sec (assuming 100 MHz clock)
-    // localparam int SEC = 50_000; // tb
+    localparam int SEC = 100_000_000;  // 1 sec (assuming 100 MHz clock)
 
     // FSM Declaration
     typedef enum logic [2:0] {
@@ -54,23 +51,22 @@ module game_logic (
 
     // Internal Registers
     logic [3:0] next_pos;
-    // logic pos_valid; // Used as output
     logic turn_reg, turn_next;
 
     // Timeout + LED
-    logic [3:0] time_elapsed; // 0 -> 7
+    logic [ 3:0] time_elapsed;  // 0 -> 7
     logic [31:0] sec_cnt;  // 0.5 sec counter
     logic [15:0] led_output_reg;
 
 
     assign led_output = led_output_reg;
-    assign turn = turn_reg; // Connect internal reg to output
+    assign turn = turn_reg;  // Connect internal reg to output
 
     // FND Controller Instance for displaying current position
     fnd_controller U_FND_CTRL (
         .clk      (clk),
         .rst      (reset),
-        .count_reg (next_pos),
+        .count_reg(next_pos),
         .fnd_com  (fnd_com),
         .fnd_data (fnd_data)
     );
@@ -78,19 +74,19 @@ module game_logic (
     // FSM Sequential Logic
     always_ff @(posedge clk or posedge reset) begin
         if (reset) begin
-            state        <= S_IDLE;
-            p1_pos       <= 0;
-            p2_pos       <= 0;
-            winner_valid <= 0;
-            winner_id    <= 0;
-            turn_reg     <= 0;
-            pos_valid    <= 0;
-            event_flag   <= 0;
+            state          <= S_IDLE;
+            p1_pos         <= 0;
+            p2_pos         <= 0;
+            winner_valid   <= 0;
+            winner_id      <= 0;
+            turn_reg       <= 0;
+            pos_valid      <= 0;
+            event_flag     <= 0;
 
             // LED + timer init
-            time_elapsed <= 0;
-            sec_cnt <= 0;
-            led_output_reg <= 16'hFFFF;   // all on
+            time_elapsed   <= 0;
+            sec_cnt        <= 0;
+            led_output_reg <= 16'hFFFF;  // all on
         end else begin
             state <= next_state;
             turn_reg <= turn_next;
@@ -100,17 +96,17 @@ module game_logic (
                     // reset all game status
                     sec_cnt <= 0;
                     time_elapsed <= 0;
-                    led_output_reg <= 16'hFFFF;   // all on
+                    led_output_reg <= 16'hFFFF;  // all on
                     pos_valid <= 0;
                     if (start_btn) begin
-                        led_output_reg <= 16'hFF00;   // Player 1 First
+                        led_output_reg <= 16'hFF00;  // Player 1 First
                     end
                 end
 
                 // WAIT_DICE: timer + LED countdown
                 S_WAIT_DICE: begin
                     if (!dice_valid) begin
-                        if (sec_cnt == SEC - 1) begin // 1 sec elapsed
+                        if (sec_cnt == SEC - 1) begin  // 1 sec elapsed
                             sec_cnt <= 0;
                             led_output_reg <= (turn_reg == 0) ? ((led_output_reg << 1) & 16'hFF00) : ((led_output_reg >> 1) & 16'h00FF);
                             time_elapsed <= time_elapsed + 1;
@@ -121,41 +117,42 @@ module game_logic (
                         sec_cnt <= 0;
                         time_elapsed <= 0;
                         led_output_reg <= (turn_reg == 0) ? 16'hFF00 : 16'h00FF;  // indicate player turn
-                    end 
+                    end
                 end
 
                 // UPDATE_POS: apply movement to player
                 S_UPDATE_POS: begin
                     pos_valid <= 1;
-                    if (turn_reg == 0) p1_pos <= (next_pos >= 10) ? 10 : next_pos;
+                    if (turn_reg == 0)
+                        p1_pos <= (next_pos >= 10) ? 10 : next_pos;
                     else p2_pos <= (next_pos >= 10) ? 10 : next_pos;
                 end
 
                 // WAIT_ANIM: wait for UI to finish moving the player
                 S_WAIT_ANIM: begin
-                    pos_valid <= 1; // Keep high for CDC
+                    pos_valid <= 1;  // Keep high for CDC
                     // Just wait for turn_done signal
                 end
 
                 S_CHECK_EVENT: begin
                     pos_valid <= 0;
-                    if (p1_pos == 2 || p2_pos == 2) event_flag <= 4'd2; // event 2 flag
+                    if (p1_pos == 2 || p2_pos == 2)
+                        event_flag <= 4'd2;  // event 2 flag
                     else if (p1_pos == 3 || p2_pos == 3) begin
-                        event_flag <= 4'd3; // event 3 flag
-                        if (turn_reg == 0)
-                            p1_pos <= 0;
-                        else
-                            p2_pos <= 0;
-                    end 
-                    else if (p1_pos == 4 || p2_pos == 4) event_flag <= 4'd4; // event 4 flag
-                    else if (p1_pos == 6 || p2_pos == 6) event_flag <= 4'd6; // event 6 flag
-                    else if (p1_pos == 8 || p2_pos == 8) event_flag <= 4'd8; // event 8 flag
+                        event_flag <= 4'd3;  // event 3 flag
+                        if (turn_reg == 0) p1_pos <= 0;
+                        else p2_pos <= 0;
+                    end else if (p1_pos == 4 || p2_pos == 4)
+                        event_flag <= 4'd4;  // event 4 flag
+                    else if (p1_pos == 6 || p2_pos == 6)
+                        event_flag <= 4'd6;  // event 6 flag
+                    else if (p1_pos == 8 || p2_pos == 8)
+                        event_flag <= 4'd8;  // event 8 flag
                     else if (p1_pos >= 10 || p2_pos >= 10) begin
                         winner_valid <= 1;
                         winner_id    <= (turn_reg == 0) ? 0 : 1;
-                    end
-                    else begin
-                        event_flag <= 4'd0; // no event
+                    end else begin
+                        event_flag <= 4'd0;  // no event
                     end
                 end
 
@@ -165,7 +162,6 @@ module game_logic (
 
                 // NEXT_TURN: flip turn, reset LED + timer
                 S_NEXT_TURN: begin
-                    // turn <= ~turn;
                     time_elapsed <= 0;
                     sec_cnt <= 0;
                     led_output_reg <= (turn_reg == 0) ? 16'hFF00 : 16'h00FF;
@@ -175,7 +171,7 @@ module game_logic (
                 S_WIN: begin
                     // Game over effects can be added here if needed
                     led_output_reg <= (winner_id == 0) ? 16'hF0F0 : 16'h0F0F; // indicate winner
-                    event_flag <= 4'd10; // win event
+                    event_flag <= 4'd10;  // win event
                 end
 
             endcase
@@ -184,62 +180,53 @@ module game_logic (
 
     // Next Position Calculation
     always_comb begin
-        if (turn_reg == 1'b0)
-            next_pos = p1_pos + dice_value;
-        else
-            next_pos = p2_pos + dice_value;
+        if (turn_reg == 1'b0) next_pos = p1_pos + dice_value;
+        else next_pos = p2_pos + dice_value;
     end
 
     // FSM Next-State Logic
     always_comb begin
         next_state = state;
-        turn_next = turn_reg;
+        turn_next  = turn_reg;
         case (state)
             S_IDLE: begin
                 if (start_btn) begin
                     next_state = S_WAIT_DICE;
-                    turn_next = 0; // Player 1 starts first
+                    turn_next  = 0;  // Player 1 starts first
                 end
             end
 
             S_WAIT_DICE: begin
-                if (dice_valid)
-                    next_state = S_UPDATE_POS;
+                if (dice_valid) next_state = S_UPDATE_POS;
                 else if (time_elapsed == 8) begin
-                    turn_next = ~turn_reg;
-                    next_state = S_NEXT_TURN;   // timeout
-                end else
-                    next_state = S_WAIT_DICE;
+                    turn_next  = ~turn_reg;
+                    next_state = S_NEXT_TURN;  // timeout
+                end else next_state = S_WAIT_DICE;
             end
 
             S_UPDATE_POS: begin
-                next_state = S_WAIT_ANIM; // Go to wait anim
+                next_state = S_WAIT_ANIM;  // Go to wait anim
             end
 
             S_WAIT_ANIM: begin
-                if (turn_done)
-                    next_state = S_CHECK_EVENT;
-                else
-                    next_state = S_WAIT_ANIM;
+                if (turn_done) next_state = S_CHECK_EVENT;
+                else next_state = S_WAIT_ANIM;
             end
 
             S_CHECK_EVENT: begin
-                if (p1_pos >= 10 || p2_pos >= 10)
-                    next_state = S_WIN;
-                else
-                    next_state = S_START_EVENT;
+                if (p1_pos >= 10 || p2_pos >= 10) next_state = S_WIN;
+                else next_state = S_START_EVENT;
             end
 
             S_START_EVENT: begin
                 if (!event_flag) begin
-                    turn_next = ~turn_reg;
+                    turn_next  = ~turn_reg;
                     next_state = S_NEXT_TURN;
                 end else if (turn_done) begin
                     // Wait for event animation (e.g. moving back) to finish
-                    turn_next = ~turn_reg;
+                    turn_next  = ~turn_reg;
                     next_state = S_NEXT_TURN;
-                end else
-                    next_state = S_START_EVENT;
+                end else next_state = S_START_EVENT;
             end
 
             S_NEXT_TURN: begin

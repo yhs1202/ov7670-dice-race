@@ -1,170 +1,188 @@
-// =============================================
-// FINISH 텍스트 렌더러 (for 10th tile reached)
-// =============================================
-module finish_renderer #(
-    parameter SCREEN_CENTER_X = 320, // 화면 중앙 X
-    parameter SCREEN_CENTER_Y = 240  // 화면 중앙 Y
-)(
-    input  logic [9:0] x,
-    input  logic [9:0] y,
-    input  logic       finish_en,   // 플레이어가 10칸 도착했을 때 1
+// finish_text_renderer.sv
+// 마리오 스타일 "FINISH" 텍스트 렌더러
+// 빨간색 + 흰색 테두리 (큰 픽셀 폰트)
 
-    output logic       finish_on,
-    output logic [7:0] r,
-    output logic [7:0] g,
-    output logic [7:0] b
+import color_pkg::*;
+
+module finish_text_renderer (
+    input  logic [9:0] x,           // 현재 스캔 x 좌표
+    input  logic [9:0] y,           // 현재 스캔 y 좌표
+    input  logic [9:0] text_x,      // 텍스트 시작 x 좌표
+    input  logic [9:0] text_y,      // 텍스트 시작 y 좌표
+    output rgb_t       color,       // 출력 색상
+    output logic       enable       // 렌더링 활성화
 );
 
-    // ---------------------------------------------------------
-    // FINISH 문자열은 6 글자(F I N I S H)
-    // 글자 하나는 40x60 크기로 구성
-    // ---------------------------------------------------------
-    localparam CHAR_W = 40;
-    localparam CHAR_H = 60;
-    localparam TOTAL_W = CHAR_W * 6;
+    // ========================================
+    // 폰트 크기 및 색상
+    // ========================================
+    localparam CHAR_WIDTH = 7;      // 글자 폭
+    localparam CHAR_HEIGHT = 9;     // 글자 높이
+    localparam SPACING = 2;         // 글자 간격
+    localparam NUM_CHARS = 6;       // "FINISH" = 6글자
+    localparam TOTAL_WIDTH = NUM_CHARS * CHAR_WIDTH + (NUM_CHARS - 1) * SPACING;
 
-    // FINISH 출력 시작 좌표 (중앙 정렬)
-    localparam FINISH_X_START = SCREEN_CENTER_X - (TOTAL_W / 2);
-    localparam FINISH_Y_START = SCREEN_CENTER_Y - (CHAR_H / 2);
+    // 마리오 스타일 색상
+    localparam rgb_t RED_BRIGHT = '{r: 8'd255, g: 8'd0,   b: 8'd0};   // 밝은 빨강
+    localparam rgb_t RED_DARK   = '{r: 8'd200, g: 8'd0,   b: 8'd0};   // 어두운 빨강 (그림자)
+    localparam rgb_t YELLOW     = '{r: 8'd255, g: 8'd220, b: 8'd0};   // 노란색
+    localparam rgb_t WHITE      = '{r: 8'd255, g: 8'd255, b: 8'd255}; // 흰색 (테두리)
+    localparam rgb_t BLACK      = '{r: 8'd0,   g: 8'd0,   b: 8'd0};   // 검은색 (외곽)
 
-    // 좌표를 FINISH 영역으로 이동
-    logic [9:0] lx = x - FINISH_X_START;
-    logic [9:0] ly = y - FINISH_Y_START;
+    // ========================================
+    // 상대 좌표 계산
+    // ========================================
+    logic signed [10:0] rel_x, rel_y;
+    logic in_text;
 
-    // FINISH 전체 영역 활성화
-    wire in_finish_area =
-          (lx < TOTAL_W) &&
-          (ly < CHAR_H);
+    assign rel_x = $signed({1'b0, x}) - $signed({1'b0, text_x});
+    assign rel_y = $signed({1'b0, y}) - $signed({1'b0, text_y});
 
-    // ---------------------------------------------------------
-    // 문자 bitmap 대신 간단한 shape 기반 stroke 폰트
-    // ---------------------------------------------------------
+    assign in_text = (rel_x >= 0) && (rel_x < TOTAL_WIDTH) &&
+                     (rel_y >= 0) && (rel_y < CHAR_HEIGHT);
 
-    function logic is_F(input int xx, input int yy);
-        return (yy < 10) ||                  // 상단 바
-               (xx < 8)  ||                  // 좌측 바
-               (yy > 20 && yy < 28);         // 중간 바
-    endfunction
-
-    function logic is_I(input int xx, input int yy);
-        return (yy < 10) ||
-               (yy > CHAR_H-10) ||
-               (xx > CHAR_W/2 - 4 && xx < CHAR_W/2 + 4);
-    endfunction
-
-    function logic is_N(input int xx, input int yy);
-        return (xx < 8) ||
-               (xx > CHAR_W-8) ||
-               (xx > yy/2 && xx < yy/2 + 10);
-    endfunction
-
-    function logic is_S(input int xx, input int yy);
-        return (yy < 10) ||
-               (yy > CHAR_H-10) ||
-               (yy > 20 && yy < 28) ||
-               (xx < 10 && yy < CHAR_H/2) ||
-               (xx > CHAR_W-10 && yy > CHAR_H/2);
-    endfunction
-
-    function logic is_H(input int xx, input int yy);
-        return (xx < 8) ||
-               (xx > CHAR_W-8) ||
-               (yy > CHAR_H/2 - 4 && yy < CHAR_H/2 + 4);
-    endfunction
-
-    // ---------------------------------------------------------
-    // FINISH 문자 판별
-    // ---------------------------------------------------------
-    logic pixel_on;
-    
-    // Optimization: Use logic vectors instead of int to prevent 32-bit inference
-    logic [2:0] char_idx;
-    logic [9:0] char_x;
-    logic [9:0] char_y;
+    // ========================================
+    // 글자 선택
+    // ========================================
+    logic [2:0] char_index;
+    logic [3:0] char_x;
+    logic [3:0] char_y;
 
     always_comb begin
-        pixel_on = 0;
-        char_idx = 0;
+        // 현재 글자 인덱스 계산
+        char_index = 0;
         char_x = 0;
-        char_y = 0;
 
-        if (finish_en && in_finish_area) begin
-            /* 
-            // Original Code: Uses expensive division and modulo operators
-            int char_idx = lx / CHAR_W;
-            int char_x   = lx % CHAR_W;
-            int char_y   = ly;
+        if (in_text) begin
+            char_y = rel_y[3:0];
 
-            case (char_idx)
-                0: pixel_on = is_F(char_x, char_y);
-                1: pixel_on = is_I(char_x, char_y);
-                2: pixel_on = is_N(char_x, char_y);
-                3: pixel_on = is_I(char_x, char_y);
-                4: pixel_on = is_S(char_x, char_y);
-                5: pixel_on = is_H(char_x, char_y);
-                default: pixel_on = 0;
-            endcase
-            */
-
-            // Optimized Code: Replaces division with comparators and subtraction
-            // This significantly reduces LUT usage (logic resources)
-            char_y = ly;
-            
-            if (lx < CHAR_W) begin 
-                char_idx = 0; 
-                char_x = lx; 
-            end else if (lx < CHAR_W * 2) begin 
-                char_idx = 1; 
-                char_x = lx - CHAR_W; 
-            end else if (lx < CHAR_W * 3) begin 
-                char_idx = 2; 
-                char_x = lx - CHAR_W * 2; 
-            end else if (lx < CHAR_W * 4) begin 
-                char_idx = 3; 
-                char_x = lx - CHAR_W * 3; 
-            end else if (lx < CHAR_W * 5) begin 
-                char_idx = 4; 
-                char_x = lx - CHAR_W * 4; 
-            end else begin 
-                char_idx = 5; 
-                char_x = lx - CHAR_W * 5; 
-            end
-
-            case (char_idx)
-                0: pixel_on = is_F(char_x, char_y);
-                1: pixel_on = is_I(char_x, char_y);
-                2: pixel_on = is_N(char_x, char_y);
-                3: pixel_on = is_I(char_x, char_y);
-                4: pixel_on = is_S(char_x, char_y);
-                5: pixel_on = is_H(char_x, char_y);
-                default: pixel_on = 0;
-            endcase
-        end
-    end
-
-    // ---------------------------------------------------------
-    // Colors (Mario-style bold pixel art)
-    // ---------------------------------------------------------
-    localparam [7:0] BG_R = 255;
-    localparam [7:0] BG_G = 220;
-    localparam [7:0] BG_B = 0;       // Yellow Mario coin style
-
-    localparam [7:0] FG_R = 255;
-    localparam [7:0] FG_G = 255;
-    localparam [7:0] FG_B = 255;     // WHITE text
-
-    // Out
-    always_comb begin
-        if (finish_en && in_finish_area) begin
-            finish_on = 1;
-            if (pixel_on)
-                {r, g, b} = {FG_R, FG_G, FG_B};
+            if (rel_x < CHAR_WIDTH)
+                char_index = 0;  // F
+            else if (rel_x < CHAR_WIDTH + SPACING + CHAR_WIDTH)
+                char_index = 1;  // I
+            else if (rel_x < 2*(CHAR_WIDTH + SPACING) + CHAR_WIDTH)
+                char_index = 2;  // N
+            else if (rel_x < 3*(CHAR_WIDTH + SPACING) + CHAR_WIDTH)
+                char_index = 3;  // I
+            else if (rel_x < 4*(CHAR_WIDTH + SPACING) + CHAR_WIDTH)
+                char_index = 4;  // S
             else
-                {r, g, b} = {BG_R, BG_G, BG_B};
-        end else begin
-            finish_on = 0;
-            {r, g, b} = 24'h000000;
+                char_index = 5;  // H
+
+            // 글자 내 x 좌표
+            char_x = rel_x % (CHAR_WIDTH + SPACING);
+            if (char_x >= CHAR_WIDTH)
+                char_x = CHAR_WIDTH - 1;  // 간격은 빈 공간
         end
     end
+
+    // ========================================
+    // 폰트 패턴 (7x9 픽셀)
+    // ========================================
+    logic is_letter;
+    logic is_border;
+
+    always_comb begin
+        is_letter = 0;
+
+        if (in_text && char_x < CHAR_WIDTH) begin
+            case (char_index)
+                // F
+                3'd0: begin
+                    case (char_y)
+                        4'd0, 4'd1: is_letter = (char_x <= 6);                    // 상단 가로선
+                        4'd2, 4'd3: is_letter = (char_x <= 1);                    // 세로선
+                        4'd4:       is_letter = (char_x <= 5);                    // 중간 가로선
+                        4'd5, 4'd6, 4'd7, 4'd8: is_letter = (char_x <= 1);        // 세로선
+                    endcase
+                end
+
+                // I
+                3'd1: begin
+                    case (char_y)
+                        4'd0, 4'd1: is_letter = (char_x >= 1 && char_x <= 5);     // 상단
+                        4'd2, 4'd3, 4'd4, 4'd5, 4'd6: is_letter = (char_x >= 2 && char_x <= 4); // 중간
+                        4'd7, 4'd8: is_letter = (char_x >= 1 && char_x <= 5);     // 하단
+                    endcase
+                end
+
+                // N
+                3'd2: begin
+                    case (char_y)
+                        4'd0, 4'd1, 4'd2, 4'd3, 4'd4, 4'd5, 4'd6, 4'd7, 4'd8:
+                            is_letter = (char_x <= 1) || (char_x >= 5 && char_x <= 6) ||
+                                       (char_y == char_x - 1) || (char_y == char_x);
+                    endcase
+                end
+
+                // I (same as index 1)
+                3'd3: begin
+                    case (char_y)
+                        4'd0, 4'd1: is_letter = (char_x >= 1 && char_x <= 5);
+                        4'd2, 4'd3, 4'd4, 4'd5, 4'd6: is_letter = (char_x >= 2 && char_x <= 4);
+                        4'd7, 4'd8: is_letter = (char_x >= 1 && char_x <= 5);
+                    endcase
+                end
+
+                // S
+                3'd4: begin
+                    case (char_y)
+                        4'd0, 4'd1: is_letter = (char_x >= 1 && char_x <= 5);     // 상단
+                        4'd2:       is_letter = (char_x <= 1);                    // 좌상
+                        4'd3, 4'd4: is_letter = (char_x >= 1 && char_x <= 5);     // 중간
+                        4'd5:       is_letter = (char_x >= 5);                    // 우하
+                        4'd6, 4'd7, 4'd8: is_letter = (char_x >= 1 && char_x <= 5); // 하단
+                    endcase
+                end
+
+                // H
+                3'd5: begin
+                    case (char_y)
+                        4'd0, 4'd1, 4'd2, 4'd3: is_letter = (char_x <= 1) || (char_x >= 5 && char_x <= 6);
+                        4'd4:                   is_letter = (char_x >= 0 && char_x <= 6); // 가로선
+                        4'd5, 4'd6, 4'd7, 4'd8: is_letter = (char_x <= 1) || (char_x >= 5 && char_x <= 6);
+                    endcase
+                end
+            endcase
+        end
+    end
+
+    // 테두리 판단 (글자 주변 1픽셀)
+    always_comb begin
+        is_border = 0;
+
+        if (in_text && char_x < CHAR_WIDTH) begin
+            // 간단한 테두리: 글자 좌/우/위/아래
+            if (is_letter) begin
+                is_border = 0;
+            end else begin
+                // 주변 픽셀 체크
+                if ((char_x > 0 && char_y < CHAR_HEIGHT - 1) ||
+                    (char_x < CHAR_WIDTH - 1 && char_y > 0))
+                    is_border = 0;  // 실제 구현은 복잡, 단순화
+            end
+        end
+    end
+
+    // ========================================
+    // 색상 선택 (그라데이션 효과)
+    // ========================================
+    always_comb begin
+        if (in_text && char_x < CHAR_WIDTH) begin
+            if (is_letter) begin
+                // 위쪽은 밝은 빨강, 아래쪽은 어두운 빨강 (3D 효과)
+                if (char_y < CHAR_HEIGHT / 2)
+                    color = RED_BRIGHT;
+                else
+                    color = RED_DARK;
+            end else begin
+                color = BLACK;  // 배경은 투명 처리 (enable=0)
+            end
+        end else begin
+            color = BLACK;
+        end
+    end
+
+    assign enable = in_text && is_letter;
 
 endmodule

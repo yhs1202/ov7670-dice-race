@@ -1,41 +1,48 @@
 `timescale 1ns / 1ps
 
-module OV7670_Mem_Controller (
-    input  logic        clk,
-    input  logic        reset,
+module OV7670_Mem_Controller #(
+    parameter IMG_WIDTH  = 160,
+    parameter IMG_HEIGHT = 120,
+    parameter ADDR_WIDTH = $clog2(IMG_WIDTH * IMG_HEIGHT)
+) (
+    input  logic                  pclk,
+    input  logic                  reset,
     // OV7670 side
-    input  logic        href,
-    input  logic        vsync,
-    input  logic [ 7:0] data,
+    input  logic                  href,
+    input  logic                  vsync,
+    input  logic [           7:0] data,
     // memory side
-    output logic        we,
-    output logic [16:0] wAddr,  // 320*240
-    output logic [15:0] wData
+    output logic                  we,
+    output logic [ADDR_WIDTH-1:0] wAddr,
+    output logic [          15:0] wData
 );
-    logic [17:0] pixelCounter;  // 640*480
     logic [15:0] pixelData;
+    logic        byte_toggle;
 
-    assign wAddr = pixelCounter[17:1];
     assign wData = pixelData;
 
-    always_ff @(posedge clk) begin
+    always_ff @(posedge pclk) begin
         if (reset) begin
-            pixelCounter <= 0;
-            we           <= 1'b0;
-            pixelData    <= 0;
+            wAddr       <= 0;
+            we          <= 0;
+            pixelData   <= 0;
+            byte_toggle <= 0;
         end else begin
-            if (href) begin
-                pixelCounter <= pixelCounter + 1;
-                if (pixelCounter[0] == 1'b0) begin
-                    we              <= 1'b0;
+            we <= 0;
+            if (we) wAddr <= wAddr + 1;
+            if (vsync) begin
+                wAddr       <= 0;
+                byte_toggle <= 0;
+                we          <= 0;
+            end else if (href) begin
+                if (byte_toggle == 1'b0) begin
                     pixelData[15:8] <= data;
+                    byte_toggle     <= 1'b1;
                 end else begin
-                    we             <= 1'b1;
                     pixelData[7:0] <= data;
+                    byte_toggle    <= 1'b0;
+                    we             <= 1'b1;
                 end
-            end else if (vsync) begin
-                we           <= 1'b0;
-                pixelCounter <= 0;
             end
         end
     end

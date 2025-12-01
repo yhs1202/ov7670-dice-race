@@ -6,12 +6,12 @@
 //              Designed for easy integration with future game FSM
 //
 // Architecture Integration:
-//   - Receives 320¡¿240 pixel stream from ImgMemReader_ColorDetect
+//   - Receives 320å ì™ì˜™240 pixel stream from ImgMemReader_ColorDetect
 //   - Processes RGB888 (8-bit per channel) for accurate color detection
 //   - Outputs frame-level dominant color with confidence
 //
 // Features:
-//   - Configurable ROI boundaries (in 320¡¿240 coordinate space)
+//   - Configurable ROI boundaries (in 320å ì™ì˜™240 coordinate space)
 //   - RGB threshold-based color detection
 //   - Per-frame dominant color determination with minimum threshold
 //   - Color confidence output for noise rejection
@@ -24,29 +24,36 @@
 //=============================================================================
 
 module ROI_Color_Detector #(
-    parameter ROI_X_START = 10'd100,   // ROI left boundary (320¡¿240 space)
+    parameter ROI_X_START = 10'd100,   // ROI left boundary (320íšž240 space)
     parameter ROI_X_END   = 10'd220,   // ROI right boundary
     parameter ROI_Y_START = 10'd60,    // ROI top boundary
     parameter ROI_Y_END   = 10'd180,   // ROI bottom boundary
     
     // RGB Thresholds (8-bit values, 0-255 range)
+    // Adjusted for OV7670 camera color characteristics
     // RED detection: R > R_MIN && G < G_MAX && B < B_MAX
-    parameter RED_R_MIN = 8'd180,      // Minimum red channel value
-    parameter RED_G_MAX = 8'd100,      // Maximum green (to reject yellow)
-    parameter RED_B_MAX = 8'd100,      // Maximum blue (to reject magenta)
+    parameter RED_R_MIN = 8'd150,      // Minimum red channel value (lowered for camera)
+    parameter RED_G_MAX = 8'd120,      // Maximum green (to reject yellow)
+    parameter RED_B_MAX = 8'd120,      // Maximum blue (to reject magenta)
     
     // GREEN detection: R < R_MAX && G > G_MIN && B < B_MAX
-    parameter GREEN_R_MAX = 8'd100,    // Maximum red (to reject yellow)
-    parameter GREEN_G_MIN = 8'd180,    // Minimum green channel value
-    parameter GREEN_B_MAX = 8'd100,    // Maximum blue (to reject cyan)
+    parameter GREEN_R_MAX = 8'd120,    // Maximum red (to reject yellow)
+    parameter GREEN_G_MIN = 8'd150,    // Minimum green channel value
+    parameter GREEN_B_MAX = 8'd120,    // Maximum blue (to reject cyan)
     
     // BLUE detection: R < R_MAX && G < G_MAX && B > B_MIN
-    parameter BLUE_R_MAX = 8'd100,     // Maximum red (to reject magenta)
-    parameter BLUE_G_MAX = 8'd100,     // Maximum green (to reject cyan)
-    parameter BLUE_B_MIN = 8'd180,     // Minimum blue channel value
+    parameter BLUE_R_MAX = 8'd120,     // Maximum red (to reject magenta)
+    parameter BLUE_G_MAX = 8'd120,     // Maximum green (to reject cyan)
+    parameter BLUE_B_MIN = 8'd150,     // Minimum blue channel value
+    
+    // WHITE detection: R > R_MIN && G > G_MIN && B > B_MIN (all channels high)
+    parameter WHITE_R_MIN = 8'd180,    // Minimum red for white
+    parameter WHITE_G_MIN = 8'd180,    // Minimum green for white
+    parameter WHITE_B_MIN = 8'd180,    // Minimum blue for white
     
     // Minimum pixel count to declare a color (noise rejection)
-    parameter MIN_PIXEL_THRESHOLD = 16'd50
+    parameter MIN_PIXEL_THRESHOLD = 16'd100,     // Increased for stability
+    parameter WHITE_PIXEL_THRESHOLD = 16'd500    // Higher threshold for white background
 ) (
     input  logic        clk,
     input  logic        reset,
@@ -67,38 +74,43 @@ module ROI_Color_Detector #(
     output logic        is_red,         // High when red detected at current pixel
     output logic        is_green,       // High when green detected
     output logic        is_blue,        // High when blue detected
+    output logic        is_white,       // High when white detected at current pixel
     
     // Frame-level dominant color output (for FSM integration)
-    output logic [1:0]  dominant_color, // 2'b01=RED, 2'b10=GREEN, 2'b11=BLUE, 2'b00=NONE
-    output logic        color_valid,    // Pulse for 1 cycle when result ready
-    output logic [15:0] color_confidence // Pixel count of dominant color (0-14400 max for 120¡¿120 ROI)
+    output logic [1:0]  dominant_color, // 2'b01=RED, 2'b10=GREEN, 2'b11=BLUE, 2'b00=NONE/WHITE
+    output logic        color_valid,    // Pulse for 1 cycle when R/G/B detected (NOT for white/none)
+    output logic        white_detected, // Pulse when white background detected (turn end signal)
+    output logic [15:0] color_confidence // Pixel count of dominant color (0-14400 max for 120íšž120 ROI)
 );
 
     //=========================================================================
     // Color encoding for FSM compatibility
     //=========================================================================
-    localparam [1:0] COLOR_NONE  = 2'b00;
-    localparam [1:0] COLOR_RED   = 2'b01;  // Future: 1-step movement
-    localparam [1:0] COLOR_GREEN = 2'b10;  // Future: 2-step movement
-    localparam [1:0] COLOR_BLUE  = 2'b11;  // Future: 3-step movement
+    localparam [1:0] COLOR_NONE  = 2'b00;  // No color or WHITE (IDLE state)
+    localparam [1:0] COLOR_RED   = 2'b01;  // 1-step movement
+    localparam [1:0] COLOR_GREEN = 2'b10;  // 2-step movement
+    localparam [1:0] COLOR_BLUE  = 2'b11;  // 3-step movement
     
     //=========================================================================
     // Internal signals
     //=========================================================================
     logic in_roi_x, in_roi_y;
-    logic is_red_detect, is_green_detect, is_blue_detect;
+    logic is_red_detect, is_green_detect, is_blue_detect, is_white_detect;
     
     // Pixel counters for each color within ROI
     logic [15:0] red_count;
     logic [15:0] green_count;
     logic [15:0] blue_count;
+    logic [15:0] white_count;
     
     // Latched results at frame end
     logic [15:0] red_count_latched;
     logic [15:0] green_count_latched;
     logic [15:0] blue_count_latched;
+    logic [15:0] white_count_latched;
     logic [1:0]  dominant_color_reg;
     logic [15:0] confidence_reg;
+    logic        white_detected_reg;
     
     // Frame control
     logic frame_active;
@@ -130,10 +142,16 @@ module ROI_Color_Detector #(
                             (pixel_g < BLUE_G_MAX) && 
                             (pixel_b >= BLUE_B_MIN);
     
+    // WHITE: All channels high (background/IDLE state)
+    assign is_white_detect = (pixel_r >= WHITE_R_MIN) && 
+                             (pixel_g >= WHITE_G_MIN) && 
+                             (pixel_b >= WHITE_B_MIN);
+    
     // Output real-time detection (only within ROI)
     assign is_red   = in_roi && pixel_valid && is_red_detect;
     assign is_green = in_roi && pixel_valid && is_green_detect;
     assign is_blue  = in_roi && pixel_valid && is_blue_detect;
+    assign is_white = in_roi && pixel_valid && is_white_detect;
     
     //=========================================================================
     // Frame Control Logic
@@ -168,22 +186,29 @@ module ROI_Color_Detector #(
             red_count   <= 16'd0;
             green_count <= 16'd0;
             blue_count  <= 16'd0;
+            white_count <= 16'd0;
         end else begin
             // At frame boundary, latch and reset
             if (frame_end_detect) begin
                 red_count   <= 16'd0;
                 green_count <= 16'd0;
                 blue_count  <= 16'd0;
+                white_count <= 16'd0;
             end 
             // During frame, accumulate color counts within ROI
             else if (pixel_valid && in_roi) begin
                 // Count each color independently (pixel can match multiple colors)
-                if (is_red_detect)
-                    red_count <= red_count + 16'd1;
-                if (is_green_detect)
-                    green_count <= green_count + 16'd1;
-                if (is_blue_detect)
-                    blue_count <= blue_count + 16'd1;
+                // WHITE has priority - if white, don't count other colors
+                if (is_white_detect)
+                    white_count <= white_count + 16'd1;
+                else begin
+                    if (is_red_detect)
+                        red_count <= red_count + 16'd1;
+                    if (is_green_detect)
+                        green_count <= green_count + 16'd1;
+                    if (is_blue_detect)
+                        blue_count <= blue_count + 16'd1;
+                end
             end
         end
     end
@@ -191,46 +216,65 @@ module ROI_Color_Detector #(
     //=========================================================================
     // Dominant Color Determination (at frame boundary)
     // Uses winner-takes-all strategy with minimum threshold
+    //
+    // Game Logic:
+    //   - R/G/B color has PRIORITY over WHITE
+    //   - WHITE is only detected when NO R/G/B colors are present
+    //   - This ensures dice color is captured first, then turn ends when dice removed
     //=========================================================================
     always_ff @(posedge clk or posedge reset) begin
         if (reset) begin
             red_count_latched   <= 16'd0;
             green_count_latched <= 16'd0;
             blue_count_latched  <= 16'd0;
+            white_count_latched <= 16'd0;
             dominant_color_reg  <= COLOR_NONE;
+            white_detected_reg  <= 1'b0;
             confidence_reg      <= 16'd0;
             color_valid         <= 1'b0;
         end else begin
-            color_valid <= 1'b0;  // Default: single-cycle pulse
+            color_valid <= 1'b0;         // Default: single-cycle pulse
+            white_detected_reg <= 1'b0;  // Default: single-cycle pulse
             
             if (frame_end_detect) begin
                 // Latch counts from previous frame (before reset)
                 red_count_latched   <= red_count;
                 green_count_latched <= green_count;
                 blue_count_latched  <= blue_count;
+                white_count_latched <= white_count;
                 
+                // PRIORITY 1: Check for R/G/B colors FIRST (dice on screen)
                 // Determine dominant color using winner-takes-all
-                // Priority order (if equal): RED > GREEN > BLUE
                 if (red_count >= green_count && red_count >= blue_count && red_count > MIN_PIXEL_THRESHOLD) begin
                     dominant_color_reg <= COLOR_RED;
                     confidence_reg     <= red_count;
+                    color_valid        <= 1'b1;  // Valid color detected!
                 end 
                 else if (green_count >= red_count && green_count >= blue_count && green_count > MIN_PIXEL_THRESHOLD) begin
                     dominant_color_reg <= COLOR_GREEN;
                     confidence_reg     <= green_count;
+                    color_valid        <= 1'b1;  // Valid color detected!
                 end 
                 else if (blue_count >= red_count && blue_count >= green_count && blue_count > MIN_PIXEL_THRESHOLD) begin
                     dominant_color_reg <= COLOR_BLUE;
                     confidence_reg     <= blue_count;
+                    color_valid        <= 1'b1;  // Valid color detected!
                 end 
+                // PRIORITY 2: No R/G/B detected, check for WHITE (dice removed, turn end)
+                else if (white_count > WHITE_PIXEL_THRESHOLD) begin
+                    // White background detected - signal turn end
+                    // Only triggers when NO dice colors are present
+                    dominant_color_reg <= COLOR_NONE;
+                    confidence_reg     <= white_count;
+                    white_detected_reg <= 1'b1;  // Turn end signal
+                    color_valid        <= 1'b0;  // NO color_valid for white
+                end
                 else begin
-                    // No color exceeds threshold
+                    // No color exceeds threshold (ambiguous state)
                     dominant_color_reg <= COLOR_NONE;
                     confidence_reg     <= 16'd0;
+                    color_valid        <= 1'b0;
                 end
-                
-                // Assert color_valid pulse for FSM trigger
-                color_valid <= 1'b1;
             end
         end
     end
@@ -240,5 +284,6 @@ module ROI_Color_Detector #(
     //=========================================================================
     assign dominant_color = dominant_color_reg;
     assign color_confidence = confidence_reg;
+    assign white_detected = white_detected_reg;
     
 endmodule

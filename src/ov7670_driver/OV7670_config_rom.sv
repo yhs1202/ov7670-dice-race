@@ -12,11 +12,11 @@ module OV7670_config_rom (
             0: rom_data <= 16'h12_80;  //reset
             1: rom_data <= 16'hFF_F0;  //delay
             2:
-            rom_data <= 16'h12_14;  // COM7,     set RGB color output and set QVGA
+            rom_data <= 16'h12_0C;  // COM7,     set RGB color output and set QVGA
             3:
             rom_data <= 16'h11_80;  // CLKRC     internal PLL matches input clock
-            4: rom_data <= 16'h0C_04;  // COM3,     default settings
-            5: rom_data <= 16'h3E_19;  // COM14,    no scaling, normal pclock
+            4: rom_data <= 16'h0C_04;  // COM3,     
+            5: rom_data <= 16'h3E_1A;  // COM14,    
             6: rom_data <= 16'h04_00;  // COM1,     disable CCIR656
             7: rom_data <= 16'h40_d0;  //COM15,     RGB565, full output range
             8: rom_data <= 16'h3a_04;  //TSLB       
@@ -30,13 +30,13 @@ module OV7670_config_rom (
             16: rom_data <= 16'h58_9E;  //MTXS
             17:
             rom_data <= 16'h3D_C0; //COM13      sets gamma enable, does not preserve reserved bits, may be wrong?
-            18: rom_data <= 16'h17_15;  //HSTART     start high 8 bits 
+            18: rom_data <= 16'h17_15; //HSTART     start high 8 bits 
             19:
             rom_data <= 16'h18_03; //HSTOP      stop high 8 bits //these kill the odd colored line
-            20: rom_data <= 16'h32_00;  //91  //HREF       edge offset
+            20: rom_data <= 16'h32_36;  //00//91  //HREF      
             21: rom_data <= 16'h19_03;  //VSTART     start high 8 bits
             22: rom_data <= 16'h1A_7B;  //VSTOP      stop high 8 bits
-            23: rom_data <= 16'h03_00;  // 00 //VREF       vsync edge offset
+            23: rom_data <= 16'h03_00;  //VREF       vsync edge offset
             24: rom_data <= 16'h0F_41;  //COM6       reset timings
             25:
             rom_data <= 16'h1E_00; //MVFP       disable mirror / flip //might have magic value of 03
@@ -51,11 +51,11 @@ module OV7670_config_rom (
             32: rom_data <= 16'hB2_0e;  //RSVD       more magic internet values
             33: rom_data <= 16'hB3_80;  //THL_ST
             //begin mystery scaling numbers
-            34: rom_data <= 16'h70_3a;
-            35: rom_data <= 16'h71_35;
-            36: rom_data <= 16'h72_11;
-            37: rom_data <= 16'h73_f1;
-            38: rom_data <= 16'ha2_02;
+            34: rom_data <= 16'h70_3a;  // REG_SCALING_XSC
+            35: rom_data <= 16'h71_35;  // REG_SCALING_YSC
+            36: rom_data <= 16'h72_22;  // REG_SCALING_DCWCTR
+            37: rom_data <= 16'h73_f2;  // REG_SCALING_PCLK_DIV
+            38: rom_data <= 16'ha2_02;  // REG_SCALING_PCLK_DELAY
             //gamma curve values
             39: rom_data <= 16'h7a_20;
             40: rom_data <= 16'h7b_10;
@@ -74,7 +74,7 @@ module OV7670_config_rom (
             53: rom_data <= 16'h88_d7;
             54: rom_data <= 16'h89_e8;
             //AGC and AEC
-            55: rom_data <= 16'h13_e0;  //COM8, disable AGC / AEC
+            55: rom_data <= 16'h13_e4;  //COM8, disable AGC / AEC
             56: rom_data <= 16'h00_00;  //set gain reg to 0 for AGC
             57: rom_data <= 16'h10_00;  //set ARCJ reg to 0
             58: rom_data <= 16'h0d_40;  //magic reserved bit for COM4
