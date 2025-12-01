@@ -6,12 +6,12 @@
 //              Designed for easy integration with future game FSM
 //
 // Architecture Integration:
-//   - Receives 320占쏙옙240 pixel stream from ImgMemReader_ColorDetect
+//   - Receives 320x240 pixel stream from ImgMemReader_ColorDetect
 //   - Processes RGB888 (8-bit per channel) for accurate color detection
 //   - Outputs frame-level dominant color with confidence
 //
 // Features:
-//   - Configurable ROI boundaries (in 320占쏙옙240 coordinate space)
+//   - Configurable ROI boundaries (in 320x240 coordinate space)
 //   - RGB threshold-based color detection
 //   - Per-frame dominant color determination with minimum threshold
 //   - Color confidence output for noise rejection

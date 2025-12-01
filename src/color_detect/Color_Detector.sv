@@ -51,10 +51,18 @@ module Color_Detector (
     assign pixel_b8 = {pixel_rgb_data[4:0], 3'b000};  // Scale 5-bit to 8-bit
 
     // Pixel valid: only process pixels in the 320x240 frame buffer region
+    // Frame buffer is displayed in bottom-left: x < 320, y in [240, 480)
     logic pixel_valid;
     assign pixel_valid = DE && (x_pixel < 10'd320) && (y_pixel >= 10'd240) && (y_pixel < 10'd480);
 
-    // Frame start detection: detect start of new frame (when y_pixel wraps to 0)
+    // Convert VGA coordinates to 320x240 frame buffer coordinates
+    logic [9:0] x_coord_320x240;
+    logic [9:0] y_coord_320x240;
+    assign x_coord_320x240 = x_pixel;  // x is already in 0-319 range
+    assign y_coord_320x240 = y_pixel - 10'd240;  // Convert from VGA [240,480) to [0,240)
+
+    // Frame start detection: detect start of new frame in frame buffer region
+    // (when y_pixel enters the frame buffer region at 240)
     logic y_pixel_d;
     logic frame_start;
     always_ff @(posedge clk or posedge reset) begin
@@ -64,7 +72,7 @@ module Color_Detector (
             y_pixel_d <= y_pixel;
         end
     end
-    assign frame_start = (y_pixel == 10'd0) && (y_pixel_d != 10'd0) && DE;
+    assign frame_start = (y_pixel == 10'd240) && (y_pixel_d != 10'd240) && DE;
 
     //=========================================================================
     // ROI Color Detection
@@ -73,6 +81,13 @@ module Color_Detector (
     logic        color_valid_raw;
     logic        white_detected_raw;
     logic [15:0] confidence_raw;
+    
+    // Unused outputs from ROI_Color_Detector (for display overlay if needed)
+    logic        in_roi;
+    logic        is_red;
+    logic        is_green;
+    logic        is_blue;
+    logic        is_white;
 
     ROI_Color_Detector #(
         .ROI_X_START(ROI_X_START),
@@ -95,13 +110,13 @@ module Color_Detector (
         .WHITE_B_MIN(8'd160),
         .MIN_PIXEL_THRESHOLD(16'd200),  // Min pixels to accept R/G/B color
         .WHITE_PIXEL_THRESHOLD (16'd5000)   // ~35% of ROI must be white for turn_end
-    ) U_Color_Detector (
-        .clk             (sys_clk),
+    ) U_ROI_Color_Detector (
+        .clk             (clk),
         .reset           (reset),
         .pixel_valid     (pixel_valid),
         .frame_start     (frame_start),
-        .x_coord         (pixel_x),
-        .y_coord         (pixel_y),
+        .x_coord         (x_coord_320x240),
+        .y_coord         (y_coord_320x240),
         .pixel_r         (pixel_r8),
         .pixel_g         (pixel_g8),
         .pixel_b         (pixel_b8),

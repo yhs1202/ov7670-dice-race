@@ -41,7 +41,7 @@ module Img_Filter #(
     logic [3:0] mosaic_r, mosaic_g, mosaic_b;
 
     Mosaic_Filter #(
-        .BLOCK_SIZE(12),
+        .BLOCK_SIZE(8),
         .IMG_WIDTH (IMG_WIDTH),
         .IMG_HEIGHT(IMG_HEIGHT)
     ) U_Mosaic_Filter (

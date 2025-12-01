@@ -211,7 +211,6 @@ module DiceRace_System (
     logic [ 7:0] fnd_data_game;
     logic [ 3:0] event_flag;
 
-
     // [System State Machine]
     typedef enum logic {
         STATE_INTRO,
@@ -241,7 +240,9 @@ module DiceRace_System (
         end
     end
 
-    logic       white_stable;
+    // Connect white_stable from Color_Detector to Game_Logic_Controller
+    logic white_stable;
+    assign white_stable = current_state_white;
 
     // Debug outputs
     logic [2:0] debug_state;
