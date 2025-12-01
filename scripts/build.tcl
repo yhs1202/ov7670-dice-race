@@ -15,7 +15,7 @@ if {[info exists ::env(TOP)]} {
     set top $::env(TOP)
 } else {
     # Top-level module name (edit this)
-    set top "top_game_logic_for_test"                    ;# Top-level module name (edit this)
+    set top "DiceRace_System"                    ;# Top-level module name (edit this)
 }
 set tb_top "tb_$top"                 ;# Testbench top module name (edit this)
 set part "xc7a35ticsg324-1L"         ;# Device part (example: Basys-3)
