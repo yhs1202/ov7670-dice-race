@@ -38,13 +38,57 @@ module DiceRace_System (
 
     input logic [2:0] filter_sel
 );
-
     /////////////////////////// Parameter ///////////////////////////
     localparam IMG_WIDTH = 160;
     localparam IMG_HEIGHT = 120;
     localparam ADDR_WIDTH = $clog2(IMG_WIDTH * IMG_HEIGHT);
     /////////////////////////////////////////////////////////////////
 
+    // Camera System Instance
+    logic pclk;
+    assign CAM1_xclk = pclk;
+    assign CAM2_xclk = pclk;
+    logic [15:0] CAM1_RGB_out;
+    logic [15:0] CAM2_RGB_out;
+    logic DE;
+    logic [9:0] x_pixel;
+    logic [9:0] y_pixel;
+
+    Camera_system U_Camera_System (
+        .clk        (clk),
+        .rst        (reset),
+
+        .CAM1_data  (CAM1_data),
+        .CAM1_href  (CAM1_href),
+        .CAM1_pclk  (CAM1_pclk),
+        .CAM1_vsync (CAM1_vsync),
+
+        .CAM1_sioc  (CAM1_sioc),
+        .CAM1_siod  (CAM1_siod),
+        // .CAM1_xclk  (CAM1_xclk),
+
+        .CAM2_data  (CAM2_data),
+        .CAM2_href  (CAM2_href),
+        .CAM2_pclk  (CAM2_pclk),
+        .CAM2_vsync (CAM2_vsync),
+
+        .CAM2_sioc  (CAM2_sioc),
+        .CAM2_siod  (CAM2_siod),
+        // .CAM2_xclk  (CAM2_xclk),
+
+        .pclk       (pclk),             // !! RENAMED from sys_clk to pclk !!
+        .CAM1_RGB_out(CAM1_RGB_out),    // !! RENAMED from cam1_read_data !!
+        .CAM2_RGB_out(CAM2_RGB_out),    // !! RENAMED from cam2_read_data !!
+        .DE         (DE),
+        .x_pixel    (x_pixel),
+        .y_pixel    (y_pixel),
+        .h_sync     (h_sync),
+        .v_sync     (v_sync)
+    );
+
+
+
+    /*
     ///////////////////////////// Clock /////////////////////////////
     logic sys_clk;
 
@@ -57,6 +101,7 @@ module DiceRace_System (
         .pclk (sys_clk)
     );
     /////////////////////////////////////////////////////////////////
+    */
 
     ////////////////////////// Button Driver /////////////////////////
     logic btn_start_db, btn_event_db;
@@ -76,6 +121,7 @@ module DiceRace_System (
     );
     /////////////////////////////////////////////////////////////////
 
+    /*
     /////////////////////////// Input Path //////////////////////////
     logic                  CAM1_we;
     logic [ADDR_WIDTH-1:0] CAM1_wAddr;
@@ -175,6 +221,7 @@ module DiceRace_System (
         .addr   (vga_read_addr)
     );
     /////////////////////////////////////////////////////////////////
+    */
 
     ////////////////////////// Color Detection ///////////////////////
     logic [ 1:0] stable_color;
@@ -184,12 +231,12 @@ module DiceRace_System (
     logic [15:0] stable_confidence;
 
     Color_Detector U_Color_Detector (
-        .clk                (sys_clk),
+        .clk                (pclk), // Changed to pclk
         .reset              (reset),
         .DE                 (DE),
         .x_pixel            (x_pixel),
         .y_pixel            (y_pixel),
-        .pixel_rgb_data     (cam1_read_data),
+        .pixel_rgb_data     (CAM1_RGB_out),
         .stable_color       (stable_color),
         .result_ready       (result_ready),
         .turn_end           (turn_end),
@@ -279,9 +326,9 @@ module DiceRace_System (
 
     // Pixel data for Display_Overlay (only valid in left bottom region: x<320, y>=240)
     logic [3:0] dice_r_raw, dice_g_raw, dice_b_raw;
-    assign dice_r_raw = (x_pixel < 320 && y_pixel >= 240 && y_pixel < 480) ? cam1_read_data[15:12] : 4'h0;
-    assign dice_g_raw = (x_pixel < 320 && y_pixel >= 240 && y_pixel < 480) ? cam1_read_data[10:7] : 4'h0;
-    assign dice_b_raw = (x_pixel < 320 && y_pixel >= 240 && y_pixel < 480) ? cam1_read_data[4:1] : 4'h0;
+    assign dice_r_raw = (x_pixel < 320 && y_pixel >= 240 && y_pixel < 480) ? CAM1_RGB_out[15:12] : 4'h0;
+    assign dice_g_raw = (x_pixel < 320 && y_pixel >= 240 && y_pixel < 480) ? CAM1_RGB_out[10:7] : 4'h0;
+    assign dice_b_raw = (x_pixel < 320 && y_pixel >= 240 && y_pixel < 480) ? CAM1_RGB_out[4:1] : 4'h0;
 
     Display_Overlay #(
         .ROI_X_START  (10'd100),
@@ -290,7 +337,7 @@ module DiceRace_System (
         .ROI_Y_END    (10'd180),
         .BOX_THICKNESS(2'd2)
     ) U_Dice_Display_Overlay (
-        .clk           (sys_clk),
+        .clk           (pclk),  // Changed to pclk
         .reset         (reset),
         .x_coord       (x_pixel),
         .y_coord       (y_pixel),
@@ -307,9 +354,9 @@ module DiceRace_System (
 
     // Pixel data for Img_Filter (only valid in right bottom region: x>=320, y>=240)
     logic [3:0] filter_r_raw, filter_g_raw, filter_b_raw;
-    assign filter_r_raw = (x_pixel >= 320 && y_pixel >= 240 && y_pixel < 480) ? cam2_read_data[15:12] : 4'h0;
-    assign filter_g_raw = (x_pixel >= 320 && y_pixel >= 240 && y_pixel < 480) ? cam2_read_data[10:7] : 4'h0;
-    assign filter_b_raw = (x_pixel >= 320 && y_pixel >= 240 && y_pixel < 480) ? cam2_read_data[4:1] : 4'h0;
+    assign filter_r_raw = (x_pixel >= 320 && y_pixel >= 240 && y_pixel < 480) ? CAM2_RGB_out[15:12] : 4'h0;
+    assign filter_g_raw = (x_pixel >= 320 && y_pixel >= 240 && y_pixel < 480) ? CAM2_RGB_out[10:7] : 4'h0;
+    assign filter_b_raw = (x_pixel >= 320 && y_pixel >= 240 && y_pixel < 480) ? CAM2_RGB_out[4:1] : 4'h0;
 
     Img_Filter #(
         .IMG_WIDTH (IMG_WIDTH),
@@ -330,7 +377,7 @@ module DiceRace_System (
     );
 
     UI_Generator U_UI_Generator (
-        .clk           (sys_clk),
+        .clk           (pclk),  // Changed to pclk
         .reset         (reset),
         .x_pixel       (x_pixel),
         .y_pixel       (y_pixel),
