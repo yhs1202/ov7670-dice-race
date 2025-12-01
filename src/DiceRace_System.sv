@@ -48,8 +48,10 @@ module DiceRace_System (
     logic pclk;
     assign CAM1_xclk = pclk;
     assign CAM2_xclk = pclk;
-    logic [15:0] CAM1_RGB_out;
-    logic [15:0] CAM2_RGB_out;
+    // logic [15:0] CAM1_RGB_out;
+    // logic [15:0] CAM2_RGB_out;
+    logic [11:0] dice_RGB_out;
+    logic [11:0] filter_RGB_out;
     logic DE;
     logic [9:0] x_pixel;
     logic [9:0] y_pixel;
@@ -76,9 +78,10 @@ module DiceRace_System (
         .CAM2_siod  (CAM2_siod),
         // .CAM2_xclk  (CAM2_xclk),
 
-        .pclk       (pclk),             // !! RENAMED from sys_clk to pclk !!
-        .CAM1_RGB_out(CAM1_RGB_out),    // !! RENAMED from cam1_read_data !!
-        .CAM2_RGB_out(CAM2_RGB_out),    // !! RENAMED from cam2_read_data !!
+        .pclk           (pclk),             // !! RENAMED from sys_clk to pclk !!
+        .dice_RGB_out   (dice_RGB_out),
+        .filter_RGB_out (filter_RGB_out),
+
         .DE         (DE),
         .x_pixel    (x_pixel),
         .y_pixel    (y_pixel),
@@ -324,12 +327,13 @@ module DiceRace_System (
     logic [3:0] ui_r, ui_g, ui_b;
     logic ui_en;
 
+    /*
     // Pixel data for Display_Overlay (only valid in left bottom region: x<320, y>=240)
     logic [3:0] dice_r_raw, dice_g_raw, dice_b_raw;
     assign dice_r_raw = (x_pixel < 320 && y_pixel >= 240 && y_pixel < 480) ? CAM1_RGB_out[15:12] : 4'h0;
     assign dice_g_raw = (x_pixel < 320 && y_pixel >= 240 && y_pixel < 480) ? CAM1_RGB_out[10:7] : 4'h0;
     assign dice_b_raw = (x_pixel < 320 && y_pixel >= 240 && y_pixel < 480) ? CAM1_RGB_out[4:1] : 4'h0;
-
+    */
     Display_Overlay #(
         .ROI_X_START  (10'd100),
         .ROI_X_END    (10'd220),
@@ -342,9 +346,9 @@ module DiceRace_System (
         .x_coord       (x_pixel),
         .y_coord       (y_pixel),
         .display_enable(DE),
-        .pixel_r_in    (dice_r_raw),
-        .pixel_g_in    (dice_g_raw),
-        .pixel_b_in    (dice_b_raw),
+        .pixel_r_in    (dice_RGB_out[11:8]),
+        .pixel_g_in    (dice_RGB_out[7:4]),
+        .pixel_b_in    (dice_RGB_out[3:0]),
         .dominant_color(stable_color),
         .white_detected(current_state_white),
         .pixel_r_out   (dice_r),
@@ -352,12 +356,13 @@ module DiceRace_System (
         .pixel_b_out   (dice_b)
     );
 
+    /*
     // Pixel data for Img_Filter (only valid in right bottom region: x>=320, y>=240)
     logic [3:0] filter_r_raw, filter_g_raw, filter_b_raw;
     assign filter_r_raw = (x_pixel >= 320 && y_pixel >= 240 && y_pixel < 480) ? CAM2_RGB_out[15:12] : 4'h0;
     assign filter_g_raw = (x_pixel >= 320 && y_pixel >= 240 && y_pixel < 480) ? CAM2_RGB_out[10:7] : 4'h0;
     assign filter_b_raw = (x_pixel >= 320 && y_pixel >= 240 && y_pixel < 480) ? CAM2_RGB_out[4:1] : 4'h0;
-
+    */
     Img_Filter #(
         .IMG_WIDTH (IMG_WIDTH),
         .IMG_HEIGHT(IMG_HEIGHT)
@@ -368,9 +373,9 @@ module DiceRace_System (
         .DE        (DE),
         .x_pixel   (x_pixel),
         .y_pixel   (y_pixel),
-        .r_in      (filter_r_raw),
-        .g_in      (filter_g_raw),
-        .b_in      (filter_b_raw),
+        .r_in      (filter_RGB_out[11:8]),
+        .g_in      (filter_RGB_out[7:4]),
+        .b_in      (filter_RGB_out[3:0]),
         .r_out     (filter_r),
         .g_out     (filter_g),
         .b_out     (filter_b)
@@ -396,6 +401,7 @@ module DiceRace_System (
     );
     /////////////////////////////////////////////////////////////////
 
+    /*
     // Final output multiplexer
     always_comb begin
         if (!DE) begin
@@ -422,6 +428,18 @@ module DiceRace_System (
             end
         end
     end
+    */
+
+    RGB_selector U_RGB_Selector (
+        .DE               (DE),
+        .ui_en            (ui_en),
+        .x_pixel          (x_pixel),
+        .y_pixel          (y_pixel),
+        .ui_generator_out ({ui_r, ui_g, ui_b}),
+        .dice_out         ({dice_r, dice_g, dice_b}),
+        .img_filter_out   ({filter_r, filter_g, filter_b}),
+        .RGB_out          ({r_port, g_port, b_port})
+    );
 
     assign led_output = (current_state == STATE_GAME) ? led_output_game : 16'h0;
     assign fnd_com = (current_state == STATE_GAME) ? fnd_com_game : 4'hF;
