@@ -71,6 +71,9 @@ module Color_Result_Manager #(
     
     integer i;
     
+    // Signal to clear frame history when WHITE state is confirmed
+    logic clear_frame_history;
+    
     generate
         if (ENABLE_VOTING) begin : gen_voting
             //=================================================================
@@ -78,6 +81,12 @@ module Color_Result_Manager #(
             //=================================================================
             always_ff @(posedge clk or posedge reset) begin
                 if (reset) begin
+                    for (i = 0; i < 3; i = i + 1) begin
+                        frame_history[i] <= COLOR_NONE;
+                        confidence_history[i] <= 16'd0;
+                    end
+                end else if (clear_frame_history) begin
+                    // *** FIX: Clear history when WHITE state is confirmed ***
                     for (i = 0; i < 3; i = i + 1) begin
                         frame_history[i] <= COLOR_NONE;
                         confidence_history[i] <= 16'd0;
@@ -155,9 +164,11 @@ module Color_Result_Manager #(
             turn_end_reg <= 1'b0;
             current_state_white_reg <= 1'b1;  // Start in WHITE/IDLE state
             white_frame_counter <= 3'd0;
+            clear_frame_history <= 1'b0;
         end else begin
             result_ready_reg <= 1'b0;  // Pulse - default low
             turn_end_reg <= 1'b0;      // Pulse - default low
+            clear_frame_history <= 1'b0;  // Pulse - default low
             
             // WHITE detection - transition to IDLE state
             if (white_detected) begin
@@ -168,6 +179,9 @@ module Color_Result_Manager #(
                     // Only generate turn_end pulse when transitioning FROM color TO white
                     if (!current_state_white_reg) begin
                         turn_end_reg <= 1'b1;
+                        // *** FIX: Clear frame_history when entering WHITE state ***
+                        // This ensures previous color doesn't affect next detection
+                        clear_frame_history <= 1'b1;
                     end
                     current_state_white_reg <= 1'b1;
                     stable_color_reg <= COLOR_NONE;  // Clear previous color

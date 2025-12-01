@@ -16,21 +16,21 @@
 //=============================================================================
 
 module Color_Detector (
-    input  logic        clk,
-    input  logic        reset,
-    input  logic        DE,                    // Display enable
-    input  logic [ 9:0] x_pixel,               // VGA X coordinate
-    input  logic [ 9:0] y_pixel,               // VGA Y coordinate
-    input  logic [15:0] pixel_rgb_data,        // RGB565 pixel data from frame buffer
-    
+    input logic        clk,
+    input logic        reset,
+    input logic        DE,             // Display enable
+    input logic [ 9:0] x_pixel,        // VGA X coordinate
+    input logic [ 9:0] y_pixel,        // VGA Y coordinate
+    input logic [15:0] pixel_rgb_data, // RGB565 pixel data from frame buffer
+
     // Output to Game Logic (from Color_Result_Manager)
-    output logic [ 1:0] stable_color,          // 00=NONE, 01=RED, 10=GREEN, 11=BLUE
-    output logic        result_ready,          // Pulse: valid dice color detected
-    output logic        turn_end,              // Pulse: white background (turn complete)
+    output logic [1:0] stable_color,  // 00=NONE, 01=RED, 10=GREEN, 11=BLUE
+    output logic result_ready,  // Pulse: valid dice color detected
+    output logic turn_end,  // Pulse: white background (turn complete)
     output logic        current_state_white,   // Level: currently detecting WHITE background
-    output logic [15:0] stable_confidence      // Debug: confidence value
+    output logic [15:0] stable_confidence  // Debug: confidence value
 );
-    
+
     //=========================================================================
     // ROI Parameters (in 320x240 coordinate space)
     //=========================================================================
@@ -38,7 +38,7 @@ module Color_Detector (
     localparam ROI_X_END = 10'd220;
     localparam ROI_Y_START = 10'd60;
     localparam ROI_Y_END = 10'd180;
-    
+
     //=========================================================================
     // Pixel Stream Processing
     // Extract RGB888 from RGB565 and generate frame timing
@@ -47,13 +47,13 @@ module Color_Detector (
     // Convert to 8-bit for color detection
     logic [7:0] pixel_r8, pixel_g8, pixel_b8;
     assign pixel_r8 = {pixel_rgb_data[15:11], 3'b000};  // Scale 5-bit to 8-bit
-    assign pixel_g8 = {pixel_rgb_data[10:5], 2'b00};    // Scale 6-bit to 8-bit
-    assign pixel_b8 = {pixel_rgb_data[4:0], 3'b000};    // Scale 5-bit to 8-bit
-    
+    assign pixel_g8 = {pixel_rgb_data[10:5], 2'b00};  // Scale 6-bit to 8-bit
+    assign pixel_b8 = {pixel_rgb_data[4:0], 3'b000};  // Scale 5-bit to 8-bit
+
     // Pixel valid: only process pixels in the 320x240 frame buffer region
     logic pixel_valid;
-    assign pixel_valid = DE && (x_pixel < 10'd320) && (y_pixel < 10'd240);
-    
+    assign pixel_valid = DE && (x_pixel < 10'd320) && (y_pixel >= 10'd240) && (y_pixel < 10'd480);
+
     // Frame start detection: detect start of new frame (when y_pixel wraps to 0)
     logic y_pixel_d;
     logic frame_start;
@@ -65,56 +65,57 @@ module Color_Detector (
         end
     end
     assign frame_start = (y_pixel == 10'd0) && (y_pixel_d != 10'd0) && DE;
-    
+
     //=========================================================================
     // ROI Color Detection
     //=========================================================================
-    logic [1:0] dominant_color_raw;
-    logic       color_valid_raw;
-    logic       white_detected_raw;
+    logic [ 1:0] dominant_color_raw;
+    logic        color_valid_raw;
+    logic        white_detected_raw;
     logic [15:0] confidence_raw;
-    
+
     ROI_Color_Detector #(
-        .ROI_X_START          (ROI_X_START),
-        .ROI_X_END            (ROI_X_END),
-        .ROI_Y_START          (ROI_Y_START),
-        .ROI_Y_END            (ROI_Y_END),
-        // Adjusted thresholds for OV7670 camera
-        .RED_R_MIN            (8'd140),
-        .RED_G_MAX            (8'd130),
-        .RED_B_MAX            (8'd130),
-        .GREEN_R_MAX          (8'd130),
-        .GREEN_G_MIN          (8'd140),
-        .GREEN_B_MAX          (8'd130),
-        .BLUE_R_MAX           (8'd130),
-        .BLUE_G_MAX           (8'd130),
-        .BLUE_B_MIN           (8'd140),
-        .WHITE_R_MIN          (8'd160),
-        .WHITE_G_MIN          (8'd160),
-        .WHITE_B_MIN          (8'd160),
-        .MIN_PIXEL_THRESHOLD  (16'd200),
-        .WHITE_PIXEL_THRESHOLD(16'd5000)
-    ) U_ROI_Color_Detector (
-        .clk             (clk),
+        .ROI_X_START(ROI_X_START),
+        .ROI_X_END(ROI_X_END),
+        .ROI_Y_START(ROI_Y_START),
+        .ROI_Y_END(ROI_Y_END),
+        // Threshold tuning (adjusted for OV7670 camera characteristics)
+        // More lenient thresholds for better detection
+        .RED_R_MIN(8'd140),  // Red detection
+        .RED_G_MAX(8'd130),
+        .RED_B_MAX(8'd130),
+        .GREEN_R_MAX(8'd130),  // Green detection
+        .GREEN_G_MIN(8'd140),
+        .GREEN_B_MAX(8'd130),
+        .BLUE_R_MAX(8'd130),  // Blue detection
+        .BLUE_G_MAX(8'd130),
+        .BLUE_B_MIN(8'd140),
+        .WHITE_R_MIN(8'd160),  // White detection (slightly lower for camera)
+        .WHITE_G_MIN(8'd160),
+        .WHITE_B_MIN(8'd160),
+        .MIN_PIXEL_THRESHOLD(16'd200),  // Min pixels to accept R/G/B color
+        .WHITE_PIXEL_THRESHOLD (16'd5000)   // ~35% of ROI must be white for turn_end
+    ) U_Color_Detector (
+        .clk             (sys_clk),
         .reset           (reset),
         .pixel_valid     (pixel_valid),
         .frame_start     (frame_start),
-        .x_coord         (x_pixel),
-        .y_coord         (y_pixel),
+        .x_coord         (pixel_x),
+        .y_coord         (pixel_y),
         .pixel_r         (pixel_r8),
         .pixel_g         (pixel_g8),
         .pixel_b         (pixel_b8),
-        .in_roi          (),              // Not used internally
-        .is_red          (),              // Not used internally
-        .is_green        (),              // Not used internally
-        .is_blue         (),              // Not used internally
-        .is_white        (),              // Not used internally
+        .in_roi          (in_roi),
+        .is_red          (is_red),
+        .is_green        (is_green),
+        .is_blue         (is_blue),
+        .is_white        (is_white),
         .dominant_color  (dominant_color_raw),
         .color_valid     (color_valid_raw),
         .white_detected  (white_detected_raw),
         .color_confidence(confidence_raw)
     );
-    
+
     //=========================================================================
     // Color Result Management (with voting and state tracking)
     //=========================================================================

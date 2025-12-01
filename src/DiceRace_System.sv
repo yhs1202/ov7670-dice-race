@@ -63,14 +63,14 @@ module DiceRace_System (
 
     btn_debounce U_Btn_Start (
         .clk    (clk),
-        .rst    (reset),
+        .reset  (reset),
         .btn_in (start_btn),
         .btn_out(btn_start_db)
     );
 
     btn_debounce U_Btn_Event (
         .clk    (clk),
-        .rst    (reset),
+        .reset  (reset),
         .btn_in (event_end_tick),
         .btn_out(btn_event_db)
     );
@@ -182,7 +182,7 @@ module DiceRace_System (
     logic        turn_end;
     logic        current_state_white;
     logic [15:0] stable_confidence;
-    
+
     Color_Detector U_Color_Detector (
         .clk                (sys_clk),
         .reset              (reset),
@@ -206,9 +206,9 @@ module DiceRace_System (
     logic        winner_valid;
     logic        winner_id;
     logic        turn;
-    // logic [15:0] led_output_game;
-    // logic [ 3:0] fnd_com_game;
-    // logic [ 7:0] fnd_data_game;
+    logic [15:0] led_output_game;
+    logic [ 3:0] fnd_com_game;
+    logic [ 7:0] fnd_data_game;
     logic [ 3:0] event_flag;
 
 
@@ -241,23 +241,32 @@ module DiceRace_System (
         end
     end
 
+    logic       white_stable;
+
+    // Debug outputs
+    logic [2:0] debug_state;
+    logic [3:0] debug_dice_steps;
+
     Game_Logic_Controller U_Game_Logic_Controller (
-        .clk         (clk),
-        .reset       (reset),
-        .start_btn   (game_start_btn_in),
-        .dice_valid  (result_ready),       // Color detection result ready
-        .dice_value  (stable_color),         // Detected color (1=RED, 2=GREEN, 3=BLUE)
-        .p1_pos      (p1_pos),
-        .p2_pos      (p2_pos),
-        .turn_done   (turn_done),
-        .pos_valid   (pos_valid),
-        .winner_valid(winner_valid),
-        .winner_id   (winner_id),
-        .turn        (turn),
-        .led_output  (led_output),
-        .fnd_com     (fnd_com),
-        .fnd_data    (fnd_data),
-        .event_flag  (event_flag)
+        .clk             (clk),
+        .reset           (reset),
+        .start_btn       (game_start_btn_in),
+        .dice_valid      (result_ready),
+        .dice_value      (stable_color),
+        .white_stable    (white_stable),
+        .p1_pos          (p1_pos),
+        .p2_pos          (p2_pos),
+        .turn_done       (turn_done),
+        .pos_valid       (pos_valid),
+        .winner_valid    (winner_valid),
+        .winner_id       (winner_id),
+        .turn            (turn),
+        .led_output      (led_output_game),
+        .fnd_com         (fnd_com_game),
+        .fnd_data        (fnd_data_game),
+        .event_flag      (event_flag),
+        .debug_state     (debug_state),
+        .debug_dice_steps(debug_dice_steps)
     );
     /////////////////////////////////////////////////////////////////
 
@@ -266,13 +275,13 @@ module DiceRace_System (
     logic [3:0] dice_r, dice_g, dice_b;
     logic [3:0] ui_r, ui_g, ui_b;
     logic ui_en;
-    
+
     // Pixel data for Display_Overlay (only valid in left bottom region: x<320, y>=240)
     logic [3:0] dice_r_raw, dice_g_raw, dice_b_raw;
     assign dice_r_raw = (x_pixel < 320 && y_pixel >= 240 && y_pixel < 480) ? cam1_read_data[15:12] : 4'h0;
     assign dice_g_raw = (x_pixel < 320 && y_pixel >= 240 && y_pixel < 480) ? cam1_read_data[10:7] : 4'h0;
     assign dice_b_raw = (x_pixel < 320 && y_pixel >= 240 && y_pixel < 480) ? cam1_read_data[4:1] : 4'h0;
-    
+
     Display_Overlay #(
         .ROI_X_START  (10'd100),
         .ROI_X_END    (10'd220),
@@ -300,7 +309,7 @@ module DiceRace_System (
     assign filter_r_raw = (x_pixel >= 320 && y_pixel >= 240 && y_pixel < 480) ? cam2_read_data[15:12] : 4'h0;
     assign filter_g_raw = (x_pixel >= 320 && y_pixel >= 240 && y_pixel < 480) ? cam2_read_data[10:7] : 4'h0;
     assign filter_b_raw = (x_pixel >= 320 && y_pixel >= 240 && y_pixel < 480) ? cam2_read_data[4:1] : 4'h0;
-    
+
     Img_Filter #(
         .IMG_WIDTH (IMG_WIDTH),
         .IMG_HEIGHT(IMG_HEIGHT)
@@ -365,5 +374,9 @@ module DiceRace_System (
             end
         end
     end
+
+    assign led_output = (current_state == STATE_GAME) ? led_output_game : 16'h0;
+    assign fnd_com = (current_state == STATE_GAME) ? fnd_com_game : 4'hF;
+    assign fnd_data = (current_state == STATE_GAME) ? fnd_data_game : 8'hFF;
 
 endmodule
