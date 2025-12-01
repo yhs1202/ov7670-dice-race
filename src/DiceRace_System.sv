@@ -63,14 +63,14 @@ module DiceRace_System (
 
     btn_debounce U_Btn_Start (
         .clk    (clk),
-        .reset  (reset),
+        .rst    (reset),
         .btn_in (start_btn),
         .btn_out(btn_start_db)
     );
 
     btn_debounce U_Btn_Event (
         .clk    (clk),
-        .reset  (reset),
+        .rst    (reset),
         .btn_in (event_end_tick),
         .btn_out(btn_event_db)
     );
