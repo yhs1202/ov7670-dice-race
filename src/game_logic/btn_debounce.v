@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 module btn_debounce(
-    input clk, rst,
+    input clk, reset,
     input btn_in,
     output btn_out
     );
@@ -11,8 +11,8 @@ module btn_debounce(
     reg r_debounce_clk;
 
     // clk divide
-    always @(posedge clk, posedge rst) begin
-        if (rst) begin
+    always @(posedge clk, posedge reset) begin
+        if (reset) begin
             counter <= 0;
             r_debounce_clk <= 0;
         end 
@@ -31,8 +31,8 @@ module btn_debounce(
     reg [3:0] q_reg, q_next;
     wire debounce;
     // Sequential Logic
-    always @(posedge r_debounce_clk, posedge rst) begin
-       if (rst) begin
+    always @(posedge r_debounce_clk, posedge reset) begin
+       if (reset) begin
         q_reg <= 0;
        end else begin
         q_reg <= q_next;
@@ -49,8 +49,8 @@ module btn_debounce(
 
     // debounce -> delay(FF) (Q5)
     reg edge_reg;
-    always @(posedge clk, posedge rst) begin
-        if (rst) begin
+    always @(posedge clk, posedge reset) begin
+        if (reset) begin
             edge_reg <= 0;
         end else begin
             edge_reg <= debounce;
