@@ -7,7 +7,7 @@ module Img_Filter #(
     input  logic       clk,
     input  logic       reset,
     // 000: Pass, 001: Mosaic, 010: ASCII, 011~111: Reserved
-    input  logic [2:0] filter_sel,
+    input  logic [3:0] filter_sel,  // same with event_flag, Filter Selection
     // VGA Signals
     input  logic       DE,
     input  logic [9:0] x_pixel,
@@ -94,24 +94,23 @@ module Img_Filter #(
             b_out = b_in;
         end else begin
             case (filter_sel)
-                // [Mode 0] No Filter (Bypass)
-                3'b000: begin
+                4'd2: begin // ASCII Filter
+                    r_out = ascii_r;
+                    g_out = ascii_g;
+                    b_out = ascii_b;
+                end
+                4'd3: begin // Reserved
                     r_out = r_in; g_out = g_in; b_out = b_in;
                 end
-                // [Mode 1] Mosaic Filter
-                3'b001: begin
-                    r_out = mosaic_r; g_out = mosaic_g; b_out = mosaic_b;
+                4'd4: begin // Mosaic Filter
+                    r_out = mosaic_r;
+                    g_out = mosaic_g;
+                    b_out = mosaic_b;
                 end
-                // [Mode 2] ASCII Filter (Matrix Style)
-                3'b010: begin
-                    r_out = ascii_r; g_out = ascii_g; b_out = ascii_b;
-                end
-                // [Mode 3] Reserved
-                3'b011: begin
+                4'd6: begin // Reserved
                     r_out = r_in; g_out = g_in; b_out = b_in;
                 end
-                // [Mode 4] Reserved
-                3'b100: begin
+                4'd8: begin // Reserved
                     r_out = r_in; g_out = g_in; b_out = b_in;
                 end
                 // Default

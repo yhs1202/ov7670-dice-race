@@ -36,7 +36,7 @@ module DiceRace_System (
     output logic [ 3:0] fnd_com,
     output logic [ 7:0] fnd_data,
 
-    input logic [2:0] filter_sel
+    input logic [3:0] filter_sel    // for testing Img_filter 
 );
     /////////////////////////// Parameter ///////////////////////////
     localparam IMG_WIDTH = 160;
