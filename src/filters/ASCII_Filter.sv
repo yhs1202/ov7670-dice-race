@@ -28,12 +28,8 @@ module ASCII_Filter #(
     input  logic [9:0] x_local,
     input  logic [9:0] y_local,
     input  logic       filter_en,
-    input  logic [3:0] r_in,
-    input  logic [3:0] g_in,
-    input  logic [3:0] b_in,
-    output logic [3:0] r_out,
-    output logic [3:0] g_out,
-    output logic [3:0] b_out
+    input  logic [15:0] rgb565_in,  // RGB565: [15:11]=R, [10:5]=G, [4:0]=B
+    output logic [15:0] rgb565_out
 );
 
     //=========================================================================
@@ -50,17 +46,27 @@ module ASCII_Filter #(
     assign cell_y = y_local[2:0];  // Modulo 8
 
     //=========================================================================
-    // Brightness calculation (Y = 0.299*R + 0.587*G + 0.114*B)
+    // Extract RGB from RGB565 and calculate brightness
+    // RGB565: R(5-bit), G(6-bit), B(5-bit)
+    // Brightness: Y = 0.299*R + 0.587*G + 0.114*B
     // Simplified: Y ≈ (R + 2*G + B) / 4
-    // Using 4-bit RGB, scale to 8-bit for calculation
+    // Scale to 8-bit for calculation
     //=========================================================================
+    logic [4:0] r5, b5;
+    logic [5:0] g6;
     logic [7:0] r8, g8, b8;
     logic [9:0] brightness_sum;
     logic [7:0] brightness;
     
-    assign r8 = {r_in, 4'b0000};  // Scale 4-bit to 8-bit
-    assign g8 = {g_in, 4'b0000};
-    assign b8 = {b_in, 4'b0000};
+    // Extract RGB565 components
+    assign r5 = rgb565_in[15:11];  // 5-bit R
+    assign g6 = rgb565_in[10:5];   // 6-bit G
+    assign b5 = rgb565_in[4:0];    // 5-bit B
+    
+    // Scale to 8-bit for brightness calculation
+    assign r8 = {r5, 3'b000};      // Scale 5-bit to 8-bit
+    assign g8 = {g6, 2'b00};       // Scale 6-bit to 8-bit
+    assign b8 = {b5, 3'b000};      // Scale 5-bit to 8-bit
     
     assign brightness_sum = {2'b00, r8} + 
                            {1'b0, g8, 1'b0} +  // G * 2
@@ -225,26 +231,22 @@ module ASCII_Filter #(
     assign char_pixel = char_row[7 - cell_x];
 
     //=========================================================================
-    // Matrix-style color rendering (green on black)
+    // Matrix-style color rendering (green on black) - RGB565
     //=========================================================================
     always_comb begin
         if (filter_en) begin
             if (char_pixel) begin
                 // Foreground: bright green (Matrix style)
-                r_out = 4'h0;
-                g_out = 4'hF;
-                b_out = 4'h0;
+                // RGB565: R=0, G=63 (max 6-bit), B=0
+                rgb565_out = {5'b00000, 6'b111111, 5'b00000};
             end else begin
                 // Background: dark green/black
-                r_out = 4'h0;
-                g_out = 4'h1;  // Slight green tint
-                b_out = 4'h0;
+                // RGB565: R=0, G=2 (slight green tint), B=0
+                rgb565_out = {5'b00000, 6'b000010, 5'b00000};
             end
         end else begin
             // Filter disabled: pass through
-            r_out = r_in;
-            g_out = g_in;
-            b_out = b_in;
+            rgb565_out = rgb565_in;
         end
     end
 

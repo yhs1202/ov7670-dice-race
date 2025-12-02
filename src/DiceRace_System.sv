@@ -49,9 +49,9 @@ module DiceRace_System (
     assign CAM1_xclk = pclk;
     assign CAM2_xclk = pclk;
     logic [15:0] CAM1_RGB_out;
-    // logic [15:0] CAM2_RGB_out;
+    logic [15:0] CAM2_RGB_out;  // RGB565 for filter
     logic [11:0] dice_RGB_out;
-    logic [11:0] filter_RGB_out;
+    logic [11:0] filter_RGB_out;  // Legacy RGB444, not used
     logic DE;
     logic [9:0] x_pixel;
     logic [9:0] y_pixel;
@@ -82,6 +82,7 @@ module DiceRace_System (
         .dice_RGB_out   (dice_RGB_out),
         .filter_RGB_out (filter_RGB_out),
         .CAM1_RGB_out   (CAM1_RGB_out),     // For Color Detector
+        .CAM2_RGB_out   (CAM2_RGB_out),     // RGB565 for filter
 
         .DE         (DE),
         .x_pixel    (x_pixel),
@@ -324,6 +325,12 @@ module DiceRace_System (
 
     // logic [ 2:0] filter_sel;
     logic [3:0] filter_r, filter_g, filter_b;
+    logic [15:0] filter_rgb565_out;  // RGB565 output from filter
+    
+    // Convert RGB565 to RGB444 for final output
+    assign filter_r = filter_rgb565_out[15:12];
+    assign filter_g = filter_rgb565_out[10:7];
+    assign filter_b = filter_rgb565_out[4:1];
     logic [3:0] dice_r, dice_g, dice_b;
     logic [3:0] ui_r, ui_g, ui_b;
     logic ui_en;
@@ -374,12 +381,8 @@ module DiceRace_System (
         .DE        (DE),
         .x_pixel   (x_pixel),
         .y_pixel   (y_pixel),
-        .r_in      (filter_RGB_out[11:8]),
-        .g_in      (filter_RGB_out[7:4]),
-        .b_in      (filter_RGB_out[3:0]),
-        .r_out     (filter_r),
-        .g_out     (filter_g),
-        .b_out     (filter_b)
+        .rgb565_in (CAM2_RGB_out),  // Direct RGB565 input
+        .rgb565_out(filter_rgb565_out)  // RGB565 output
     );
 
     UI_Generator U_UI_Generator (
