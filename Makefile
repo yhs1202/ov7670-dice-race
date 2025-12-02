@@ -40,8 +40,6 @@ sim: $(SOURCES) scripts/sim.tcl
 	$(VIVADO) -mode gui -source scripts/sim.tcl &
 
 bit: $(BIT) scripts/bit.tcl
-	$(BIT): $(SOURCES) $(XDC)
-	@mkdir -p $(OUTDIR)
 	@echo "Run Vivado bitstream generation"
 	$(VIVADO) -mode gui -source scripts/bit.tcl
 
