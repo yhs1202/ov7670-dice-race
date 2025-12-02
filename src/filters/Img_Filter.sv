@@ -6,7 +6,7 @@ module Img_Filter #(
 ) (
     input  logic       clk,
     input  logic       reset,
-    // 000: Pass, 001: Mosaic, 010~100: Reserved
+    // 000: Pass, 001: Mosaic, 010: ASCII, 011~111: Reserved
     input  logic [2:0] filter_sel,
     // VGA Signals
     input  logic       DE,
@@ -38,6 +38,9 @@ module Img_Filter #(
         end
     end
 
+    //=========================================================================
+    // Mosaic Filter Instance
+    //=========================================================================
     logic [3:0] mosaic_r, mosaic_g, mosaic_b;
 
     Mosaic_Filter #(
@@ -58,6 +61,32 @@ module Img_Filter #(
         .b_out    (mosaic_b)
     );
 
+    //=========================================================================
+    // ASCII Filter Instance
+    //=========================================================================
+    logic [3:0] ascii_r, ascii_g, ascii_b;
+
+    ASCII_Filter #(
+        .CHAR_SIZE (8),
+        .IMG_WIDTH (IMG_WIDTH),
+        .IMG_HEIGHT(IMG_HEIGHT)
+    ) U_ASCII_Filter (
+        .clk      (clk),
+        .reset    (reset),
+        .x_local  (local_x),
+        .y_local  (local_y),
+        .filter_en(filter_en),
+        .r_in     (r_in),
+        .g_in     (g_in),
+        .b_in     (b_in),
+        .r_out    (ascii_r),
+        .g_out    (ascii_g),
+        .b_out    (ascii_b)
+    );
+
+    //=========================================================================
+    // Filter Selection MUX
+    //=========================================================================
     always_comb begin
         if (!filter_en) begin
             r_out = r_in;
@@ -73,9 +102,9 @@ module Img_Filter #(
                 3'b001: begin
                     r_out = mosaic_r; g_out = mosaic_g; b_out = mosaic_b;
                 end
-                // [Mode 2] Reserved
+                // [Mode 2] ASCII Filter (Matrix Style)
                 3'b010: begin
-                    r_out = r_in; g_out = g_in; b_out = b_in;
+                    r_out = ascii_r; g_out = ascii_g; b_out = ascii_b;
                 end
                 // [Mode 3] Reserved
                 3'b011: begin
