@@ -48,7 +48,7 @@ module DiceRace_System (
     logic pclk;
     assign CAM1_xclk = pclk;
     assign CAM2_xclk = pclk;
-    // logic [15:0] CAM1_RGB_out;
+    logic [15:0] CAM1_RGB_out;
     // logic [15:0] CAM2_RGB_out;
     logic [11:0] dice_RGB_out;
     logic [11:0] filter_RGB_out;
@@ -58,7 +58,7 @@ module DiceRace_System (
 
     Camera_system U_Camera_System (
         .clk        (clk),
-        .rst        (reset),
+        .reset      (reset),
 
         .CAM1_data  (CAM1_data),
         .CAM1_href  (CAM1_href),
@@ -81,6 +81,7 @@ module DiceRace_System (
         .pclk           (pclk),             // !! RENAMED from sys_clk to pclk !!
         .dice_RGB_out   (dice_RGB_out),
         .filter_RGB_out (filter_RGB_out),
+        .CAM1_RGB_out   (CAM1_RGB_out),     // For Color Detector
 
         .DE         (DE),
         .x_pixel    (x_pixel),
