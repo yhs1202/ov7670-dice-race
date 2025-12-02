@@ -147,9 +147,9 @@ module Color_Detector (
         .white_detected     (white_detected_raw),
         .stable_color       (stable_color),
         .result_ready       (result_ready),
-        .turn_end           (turn_end),
-        .current_state_white(current_state_white),
-        .stable_confidence  (stable_confidence)
+        //.turn_end           (turn_end),
+        .current_state_white(current_state_white)
+        //.stable_confidence  (stable_confidence)
     );
 
 endmodule

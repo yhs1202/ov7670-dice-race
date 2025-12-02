@@ -230,9 +230,9 @@ module DiceRace_System (
     ////////////////////////// Color Detection ///////////////////////
     logic [ 1:0] stable_color;
     logic        result_ready;
-    logic        turn_end;
+    //logic        turn_end;
     logic        current_state_white;
-    logic [15:0] stable_confidence;
+    //logic [15:0] stable_confidence;
 
     Color_Detector U_Color_Detector (
         .clk                (pclk), // Changed to pclk
@@ -243,9 +243,9 @@ module DiceRace_System (
         .pixel_rgb_data     (CAM1_RGB_out),
         .stable_color       (stable_color),
         .result_ready       (result_ready),
-        .turn_end           (turn_end),
-        .current_state_white(current_state_white),
-        .stable_confidence  (stable_confidence)
+        //.turn_end           (turn_end),
+        .current_state_white(current_state_white)
+        //.stable_confidence  (stable_confidence)
     );
     /////////////////////////////////////////////////////////////////
 
