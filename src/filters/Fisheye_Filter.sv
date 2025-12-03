@@ -18,7 +18,7 @@ module Fisheye_Filter #(
     parameter IMG_WIDTH  = 160,
     parameter IMG_HEIGHT = 120,
     parameter ADDR_WIDTH = $clog2(IMG_WIDTH * IMG_HEIGHT),
-    parameter CIRCLE_RADIUS = 70,  // Radius of the circle (fixed at 70)
+    parameter CIRCLE_RADIUS = 50,  // Radius of the circle (fixed at 70)
     parameter MAGNIFICATION = 2    // Zoom factor (1 = no zoom, 2 = 2x zoom)
 ) (
     input  logic       clk,
@@ -45,7 +45,7 @@ module Fisheye_Filter #(
     logic [9:0] dx, dy;
     logic [19:0] dx_squared, dy_squared;
     logic [20:0] distance_squared;
-    logic [10:0] radius_squared;
+    logic [12:0] radius_squared;
     
     // Calculate dx and dy (absolute distance from center)
     assign dx = (x_local >= CENTER_X) ? (x_local - CENTER_X) : (CENTER_X - x_local);
