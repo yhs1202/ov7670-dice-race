@@ -6,7 +6,7 @@ module DiceRace_System (
 
     // Buttons
     input logic start_btn,      // BtnU (Intro: Up, Game: Start)
-    input logic event_end_tick, // BtnR (Intro: Down, Game: Test Event)
+    input logic select_option,  // BtnD (Intro: Down, Game: Test Event)
 
     // Camera Interface (OV7670) - Camera 1 (Dice)
     output logic       CAM1_sioc,   // SCL
@@ -55,7 +55,6 @@ module DiceRace_System (
     logic [15:0] CAM1_RGB_out;
     logic [15:0] CAM2_RGB_out;  // RGB565 for filter
     logic [11:0] dice_RGB_out;
-    logic [11:0] filter_RGB_out;  // Legacy RGB444, not used
     logic        DE;
     logic [ 9:0] x_pixel;
     logic [ 9:0] y_pixel;
@@ -82,7 +81,6 @@ module DiceRace_System (
 
         .pclk           (pclk),             // !! RENAMED from sys_clk to pclk !!
         .dice_RGB_out   (dice_RGB_out),
-        .filter_RGB_out (filter_RGB_out),
         .CAM1_RGB_out   (CAM1_RGB_out),     // RGB565 for Color Detector
         .CAM2_RGB_out   (CAM2_RGB_out),     // RGB565 for filter
 
@@ -92,10 +90,30 @@ module DiceRace_System (
         .h_sync     (h_sync),
         .v_sync     (v_sync)
     );
+    
 
+/*  Not Completed yet: Refer to Game_starter.sv
+    //////////////////////// Game Starter ///////////////////////////
 
-    // Btn Debouncing, FSM Will be integrated into Game Logic Controller / UI Renderer
-    ////////////////////////// Button Driver /////////////////////////
+    logic menu_select;  // 0: Start, 1: End
+    logic is_intro;
+    logic is_game;
+    logic game_start_tick;
+
+    Game_starter U_Game_Starter (
+        .clk               (clk),
+        .reset             (reset),
+        .start_btn         (start_btn),
+        .select_option_btn (select_option),
+
+        .menu_select       (menu_select),
+        .is_intro          (is_intro),
+        .is_game           (is_game),
+        .game_start_tick   (game_start_tick)
+    );
+*/
+
+    ////////////////////////// Game Starter /////////////////////////
     logic btn_start_db, btn_event_db;
 
     btn_debounce U_Btn_Start (
@@ -105,14 +123,14 @@ module DiceRace_System (
         .btn_out(btn_start_db)
     );
 
-    btn_debounce U_Btn_Event (
+    btn_debounce U_Btn_Option_Select (
         .clk    (clk),
         .reset  (reset),
-        .btn_in (event_end_tick),
+        .btn_in (select_option),
         .btn_out(btn_event_db)
     );
 
-    // [System State Machine]
+    // System FSM
     typedef enum logic {
         STATE_INTRO,
         STATE_GAME
@@ -120,28 +138,26 @@ module DiceRace_System (
     sys_state_t current_state;
 
     logic is_intro;
+    logic is_game;
     logic game_start_btn_in;
     logic menu_select;  // 0: Start, 1: End
 
-    assign game_start_btn_in = (current_state == STATE_GAME) ? btn_start_db : 1'b0;
     assign is_intro = (current_state == STATE_INTRO);
-
+    assign is_game  = (current_state == STATE_GAME);
+    assign game_start_btn_in = is_game ? btn_start_db : 1'b0;
 
     always_ff @(posedge clk) begin
-        if (reset) current_state <= STATE_INTRO;
-        else begin
+        if (reset) begin
+            current_state <= STATE_INTRO;
+            menu_select <= 1'b0;
+        end else begin
             if (current_state == STATE_INTRO && btn_start_db)
                 current_state <= STATE_GAME;
+            if (is_intro) begin
+                if (btn_event_db) menu_select <= ~menu_select;
+            end
         end
     end
-
-    always_ff @(posedge clk) begin
-        if (reset) menu_select <= 0;
-        else if (is_intro) begin
-            if (btn_event_db) menu_select <= ~menu_select;
-        end
-    end
-
 
     ////////////////////////// Color Detection ////////////////////////
     logic [1:0] stable_color;
@@ -163,9 +179,6 @@ module DiceRace_System (
 
     /////////////////////// Dice Display Overlay //////////////////////
     logic [3:0] dice_r, dice_g, dice_b;
-    // Connect white_stable from Color_Detector to Game_Logic_Controller
-    // logic white_stable;
-    // assign white_stable = current_state_white;
 
     Display_Overlay #(
         .ROI_X_START  (10'd100),
@@ -207,14 +220,15 @@ module DiceRace_System (
     logic [2:0] debug_state;
     logic [3:0] debug_dice_steps;
 
-    assign led_output = (current_state == STATE_GAME) ? led_output_game : 16'h0;
-    assign fnd_com = (current_state == STATE_GAME) ? fnd_com_game : 4'hF;
-    assign fnd_data = (current_state == STATE_GAME) ? fnd_data_game : 8'hFF;
+    assign led_output = (is_game) ? led_output_game : 16'h0;
+    assign fnd_com = (is_game) ? fnd_com_game : 4'hF;
+    assign fnd_data = (is_game) ? fnd_data_game : 8'hFF;
 
     Game_Logic_Controller U_Game_Logic_Controller (
         .clk             (clk),
         .reset           (reset),
         .start_btn       (game_start_btn_in),
+        // .start_btn       (game_start_tick),
         .dice_valid      (result_ready),
         .dice_value      (stable_color),
         .white_stable    (current_state_white), // Changed white_stable to current_state_white

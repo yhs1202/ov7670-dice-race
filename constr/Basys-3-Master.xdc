@@ -64,11 +64,12 @@ set_property -dict { PACKAGE_PIN W4   IOSTANDARD LVCMOS33 } [get_ports {fnd_com[
 
 
 ##Buttons
-set_property -dict { PACKAGE_PIN U18   IOSTANDARD LVCMOS33 } [get_ports reset]
-set_property -dict { PACKAGE_PIN T18   IOSTANDARD LVCMOS33 } [get_ports start_btn]
-# set_property -dict { PACKAGE_PIN W19   IOSTANDARD LVCMOS33 } [get_ports dice_valid]
-set_property -dict { PACKAGE_PIN T17   IOSTANDARD LVCMOS33 } [get_ports event_end_tick]
-#set_property -dict { PACKAGE_PIN U17   IOSTANDARD LVCMOS33 } [get_ports btnD]
+set_property -dict { PACKAGE_PIN U18   IOSTANDARD LVCMOS33 } [get_ports reset]; # center
+set_property -dict { PACKAGE_PIN T18   IOSTANDARD LVCMOS33 } [get_ports start_btn]; # up
+# set_property -dict { PACKAGE_PIN W19   IOSTANDARD LVCMOS33 } [get_ports dice_valid]; # left
+# set_property -dict { PACKAGE_PIN T17   IOSTANDARD LVCMOS33 } [get_ports btnR]; # right
+set_property -dict { PACKAGE_PIN U17   IOSTANDARD LVCMOS33 } [get_ports select_option]; # down
+
 
 
 ##Pmod Header JA
