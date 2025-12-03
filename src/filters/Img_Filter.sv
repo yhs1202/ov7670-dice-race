@@ -5,13 +5,13 @@ module Img_Filter #(
     parameter IMG_HEIGHT = 120,
     parameter ADDR_WIDTH = $clog2(IMG_WIDTH * IMG_HEIGHT)
 ) (
-    input  logic       clk,
-    input  logic       reset,
-    input  logic [3:0] filter_sel,  // same with event_flag, Filter Selection
+    input  logic        clk,
+    input  logic        reset,
+    input  logic [ 3:0] filter_sel,  // same with event_flag, Filter Selection
     // VGA Signals
-    input  logic       DE,
-    input  logic [9:0] x_pixel,
-    input  logic [9:0] y_pixel,
+    input  logic        DE,
+    input  logic [ 9:0] x_pixel,
+    input  logic [ 9:0] y_pixel,
     // Pixel Input (RGB565: 16-bit)
     input  logic [15:0] rgb565_in,
     // Pixel Output (RGB565: 16-bit)
@@ -41,17 +41,17 @@ module Img_Filter #(
     logic [ADDR_WIDTH-1:0] fb_read_addr;
     logic [ADDR_WIDTH-1:0] fb_read_addr_muxed;  // Muxed read address
     logic [15:0] fb_write_data;  // RGB565: 16 bits
-    logic [15:0] fb_read_data;   // RGB565: 16 bits
+    logic [15:0] fb_read_data;  // RGB565: 16 bits
     logic fb_we;
     logic fb_oe;
-    
+
     // Calculate frame buffer address
     assign fb_write_addr = (IMG_WIDTH * local_y) + local_x;
-    assign fb_read_addr = (IMG_WIDTH * local_y) + local_x;
-    
+    assign fb_read_addr  = (IMG_WIDTH * local_y) + local_x;
+
     // Direct RGB565 storage
     assign fb_write_data = rgb565_in;
-    
+
     // Frame buffer instance (RGB565 format - reuse existing frame_buffer)
     frame_buffer #(
         .IMG_WIDTH (IMG_WIDTH),
@@ -69,25 +69,6 @@ module Img_Filter #(
     );
 
     //=========================================================================
-    // Mosaic Filter Instance
-    //=========================================================================
-    logic [15:0] mosaic_rgb565;
-
-    Mosaic_Filter #(
-        .BLOCK_SIZE(8),
-        .IMG_WIDTH (IMG_WIDTH),
-        .IMG_HEIGHT(IMG_HEIGHT)
-    ) U_Mosaic_Filter (
-        .clk        (clk),
-        .reset      (reset),
-        .x_local    (local_x),
-        .y_local    (local_y),
-        .filter_en  (filter_en),
-        .rgb565_in  (rgb565_in),
-        .rgb565_out (mosaic_rgb565)
-    );
-
-    //=========================================================================
     // ASCII Filter Instance
     //=========================================================================
     logic [15:0] ascii_rgb565;
@@ -97,13 +78,32 @@ module Img_Filter #(
         .IMG_WIDTH (IMG_WIDTH),
         .IMG_HEIGHT(IMG_HEIGHT)
     ) U_ASCII_Filter (
-        .clk        (clk),
-        .reset      (reset),
-        .x_local    (local_x),
-        .y_local    (local_y),
-        .filter_en  (filter_en),
-        .rgb565_in  (rgb565_in),
-        .rgb565_out (ascii_rgb565)
+        .clk       (clk),
+        .reset     (reset),
+        .x_local   (local_x),
+        .y_local   (local_y),
+        .filter_en (filter_en),
+        .rgb565_in (rgb565_in),
+        .rgb565_out(ascii_rgb565)
+    );
+
+    //=========================================================================
+    // Mosaic Filter Instance
+    //=========================================================================
+    logic [15:0] mosaic_rgb565;
+
+    Mosaic_Filter #(
+        .BLOCK_SIZE(8),
+        .IMG_WIDTH (IMG_WIDTH),
+        .IMG_HEIGHT(IMG_HEIGHT)
+    ) U_Mosaic_Filter (
+        .clk       (clk),
+        .reset     (reset),
+        .x_local   (local_x),
+        .y_local   (local_y),
+        .filter_en (filter_en),
+        .rgb565_in (rgb565_in),
+        .rgb565_out(mosaic_rgb565)
     );
 
     //=========================================================================
@@ -115,84 +115,13 @@ module Img_Filter #(
         .IMG_WIDTH (IMG_WIDTH),
         .IMG_HEIGHT(IMG_HEIGHT)
     ) U_Invert_Filter (
-        .clk        (clk),
-        .reset      (reset),
-        .x_local    (local_x),
-        .y_local    (local_y),
-        .filter_en  (filter_en),
-        .rgb565_in  (rgb565_in),
-        .rgb565_out (invert_rgb565)
-    );
-
-    //=========================================================================
-    // Posterize Filter Instance (Pop Art effect)
-    //=========================================================================
-    logic [15:0] posterize_rgb565;
-
-    Posterize_Filter #(
-        .IMG_WIDTH (IMG_WIDTH),
-        .IMG_HEIGHT(IMG_HEIGHT),
-        .COLOR_LEVELS(4)
-    ) U_Posterize_Filter (
-        .clk        (clk),
-        .reset      (reset),
-        .x_local    (local_x),
-        .y_local    (local_y),
-        .filter_en  (filter_en),
-        .rgb565_in  (rgb565_in),
-        .rgb565_out (posterize_rgb565)
-    );
-
-    //=========================================================================
-    // Fisheye Filter Instance
-    //=========================================================================
-    logic fisheye_selected;
-    assign fisheye_selected = (filter_sel == 4'd6);
-    
-    logic [ADDR_WIDTH-1:0] fisheye_read_addr;
-    logic [15:0] fisheye_rgb565;
-
-    Fisheye_Filter #(
-        .IMG_WIDTH (IMG_WIDTH),
-        .IMG_HEIGHT(IMG_HEIGHT),
-        .ADDR_WIDTH(ADDR_WIDTH),
-        .CIRCLE_RADIUS(70),  // Fixed circle radius
-        .MAGNIFICATION(2)
-    ) U_Fisheye_Filter (
-        .clk              (clk),
-        .reset            (reset),
-        .x_local          (local_x),
-        .y_local          (local_y),
-        .filter_en        (filter_en),
-        .rgb565_in        (rgb565_in),
-        .read_addr        (fisheye_read_addr),
-        .frame_buffer_data(fb_read_data),
-        .rgb565_out       (fisheye_rgb565)
-    );
-
-    //=========================================================================
-    // Mirror Filter Instance (Horizontal flip)
-    //=========================================================================
-    logic mirror_selected;
-    assign mirror_selected = (filter_sel == 4'd7);
-    
-    logic [ADDR_WIDTH-1:0] mirror_read_addr;
-    logic [15:0] mirror_rgb565;
-    
-    Mirror_Filter #(
-        .IMG_WIDTH (IMG_WIDTH),
-        .IMG_HEIGHT(IMG_HEIGHT),
-        .ADDR_WIDTH(ADDR_WIDTH)
-    ) U_Mirror_Filter (
-        .clk              (clk),
-        .reset            (reset),
-        .x_local          (local_x),
-        .y_local          (local_y),
-        .filter_en        (filter_en),
-        .rgb565_in        (rgb565_in),
-        .read_addr        (mirror_read_addr),
-        .frame_buffer_data(fb_read_data),
-        .rgb565_out       (mirror_rgb565)
+        .clk       (clk),
+        .reset     (reset),
+        .x_local   (local_x),
+        .y_local   (local_y),
+        .filter_en (filter_en),
+        .rgb565_in (rgb565_in),
+        .rgb565_out(invert_rgb565)
     );
 
     //=========================================================================
@@ -200,10 +129,10 @@ module Img_Filter #(
     //=========================================================================
     logic kaleidoscope_selected;
     assign kaleidoscope_selected = (filter_sel == 4'd8);
-    
+
     logic [ADDR_WIDTH-1:0] kaleido_read_addr;
     logic [15:0] kaleidoscope_rgb565;
-    
+
     Kaleidoscope_Filter #(
         .IMG_WIDTH (IMG_WIDTH),
         .IMG_HEIGHT(IMG_HEIGHT),
@@ -219,17 +148,15 @@ module Img_Filter #(
         .frame_buffer_data(fb_read_data),
         .rgb565_out       (kaleidoscope_rgb565)
     );
-    
+
     // Mux frame buffer read address: priority order
     // If multiple filters use frame buffer, priority: Fisheye > Mirror > Kaleidoscope
-    assign fb_read_addr_muxed = fisheye_selected ? fisheye_read_addr :
-                                 mirror_selected ? mirror_read_addr :
-                                 kaleidoscope_selected ? kaleido_read_addr : 
-                                 fb_read_addr;
-    
+    assign fb_read_addr_muxed = kaleidoscope_selected ? kaleido_read_addr : 
+                                fb_read_addr;
+
     // Update frame buffer write/read enable to include all filters that need it
-    assign fb_we = filter_en && (mirror_selected || fisheye_selected || kaleidoscope_selected);
-    assign fb_oe = filter_en && (mirror_selected || fisheye_selected || kaleidoscope_selected);
+    assign fb_we = filter_en && kaleidoscope_selected;
+    assign fb_oe = filter_en && kaleidoscope_selected;
 
     //=========================================================================
     // Filter Selection MUX
@@ -239,29 +166,20 @@ module Img_Filter #(
             rgb565_out = rgb565_in;
         end else begin
             case (filter_sel)
-                4'd2: begin // ASCII Filter
+                4'd2: begin  // ASCII Filter
                     rgb565_out = ascii_rgb565;
                 end
-                4'd3: begin // Posterize Filter (Pop Art)
-                    rgb565_out = posterize_rgb565;
-                end
-                4'd4: begin // Mosaic Filter
+                4'd4: begin  // Mosaic Filter
                     rgb565_out = mosaic_rgb565;
                 end
-                4'd5: begin // Invert Filter
+                4'd6: begin  // Invert Filter
                     rgb565_out = invert_rgb565;
                 end
-                4'd6: begin // Fisheye Filter
-                    rgb565_out = fisheye_rgb565;
-                end
-                4'd7: begin // Mirror Filter
-                    rgb565_out = mirror_rgb565;
-                end
-                4'd8: begin // Kaleidoscope Filter
+                4'd8: begin  // Kaleidoscope Filter
                     rgb565_out = kaleidoscope_rgb565;
                 end
                 // Default
-                default: begin 
+                default: begin
                     rgb565_out = rgb565_in;
                 end
             endcase
