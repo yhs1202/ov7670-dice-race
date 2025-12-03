@@ -18,7 +18,6 @@ help:
 	@echo ""
 	@echo "Variables (override if needed):"
 	@echo "  TOP=<top_module>    (default: $(TOP))"
-	@echo "  PART=<fpga_part>    (default: $(PART))"
 	@echo ""
 	@echo "Examples:"
 	@echo "  make TOP=MyTopModule bit"
