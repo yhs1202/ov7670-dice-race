@@ -91,28 +91,6 @@ module DiceRace_System (
         .v_sync     (v_sync)
     );
     
-
-/*  Not Completed yet: Refer to Game_starter.sv
-    //////////////////////// Game Starter ///////////////////////////
-
-    logic menu_select;  // 0: Start, 1: End
-    logic is_intro;
-    logic is_game;
-    logic game_start_tick;
-
-    Game_starter U_Game_Starter (
-        .clk               (clk),
-        .reset             (reset),
-        .start_btn         (start_btn),
-        .select_option_btn (select_option),
-
-        .menu_select       (menu_select),
-        .is_intro          (is_intro),
-        .is_game           (is_game),
-        .game_start_tick   (game_start_tick)
-    );
-*/
-
     ////////////////////////// Game Starter /////////////////////////
     logic btn_start_db, btn_event_db;
 
@@ -228,7 +206,6 @@ module DiceRace_System (
         .clk             (clk),
         .reset           (reset),
         .start_btn       (game_start_btn_in),
-        // .start_btn       (game_start_tick),
         .dice_valid      (result_ready),
         .dice_value      (stable_color),
         .white_stable    (current_state_white), // Changed white_stable to current_state_white

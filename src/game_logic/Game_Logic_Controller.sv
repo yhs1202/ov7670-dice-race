@@ -5,7 +5,6 @@ module Game_Logic_Controller (
     input  logic reset,
     input  logic start_btn,
 
-
     // dice interface (from camera processor)
     input  logic        dice_valid,   // (../color_detect/Color_Result_Manager.sv: result_ready)
     input  logic [1:0]  dice_value,   // detected color: 01=RED, 10=GREEN, 11=BLUE
@@ -17,11 +16,13 @@ module Game_Logic_Controller (
     // game status output
     output logic [3:0]  p1_pos,         // positions of players (0~10)
     output logic [3:0]  p2_pos,         // positions of players (0~10)
-    // 
+    output logic        pos_valid,      // Position update signal (Added as output)
     output logic        winner_valid,
     output logic        winner_id,      // 0 = player1, 1 = player2
     output logic        turn,           // 0 = player2, 1 = player2
-    output logic        pos_valid,      // Position update signal (Added as output)
+
+    // Filter event flags
+    output logic [3:0]  event_flag,
 
     // LED timeout display (16 LEDs)
     output logic [15:0] led_output,
@@ -30,9 +31,6 @@ module Game_Logic_Controller (
     output logic [3:0]  fnd_com,
     output logic [7:0]  fnd_data,
 
-    // Filter event flags
-    output logic [3:0]  event_flag,
-    
     // Debug outputs
     output logic [2:0]  debug_state,
     output logic [3:0]  debug_dice_steps
