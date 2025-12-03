@@ -1,9 +1,6 @@
 VIVADO ?= vivado
 PROJ := $(notdir $(CURDIR))
 
-OUTDIR := out
-BIT := $(OUTDIR)/$(PROJ).bit
-
 SOURCES := $(shell find src -type f \( -name '*.v' -o -name '*.sv' \) 2>/dev/null)
 XDC := $(wildcard constr/*.xdc)
 
@@ -35,11 +32,11 @@ build: scripts/build.tcl
 	@echo "Run Vivado build"
 	$(VIVADO) -mode gui -source scripts/build.tcl &
 
-sim: $(SOURCES) scripts/sim.tcl
+sim: scripts/sim.tcl
 	@echo "Run simulation" 
 	$(VIVADO) -mode gui -source scripts/sim.tcl &
 
-bit: $(BIT) scripts/bit.tcl
+bit: scripts/bit.tcl
 	@echo "Run Vivado bitstream generation"
 	$(VIVADO) -mode gui -source scripts/bit.tcl
 
