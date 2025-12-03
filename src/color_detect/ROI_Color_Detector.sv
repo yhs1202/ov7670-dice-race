@@ -24,7 +24,7 @@
 //=============================================================================
 
 module ROI_Color_Detector #(
-    parameter ROI_X_START = 10'd100,   // ROI left boundary (320횞240 space)
+    parameter ROI_X_START = 10'd100,   // ROI left boundary (320x240 space)
     parameter ROI_X_END   = 10'd220,   // ROI right boundary
     parameter ROI_Y_START = 10'd60,    // ROI top boundary
     parameter ROI_Y_END   = 10'd180,   // ROI bottom boundary
@@ -32,19 +32,19 @@ module ROI_Color_Detector #(
     // RGB Thresholds (8-bit values, 0-255 range)
     // Adjusted for OV7670 camera color characteristics
     // RED detection: R > R_MIN && G < G_MAX && B < B_MAX
-    parameter RED_R_MIN = 8'd150,      // Minimum red channel value (lowered for camera)
-    parameter RED_G_MAX = 8'd120,      // Maximum green (to reject yellow)
-    parameter RED_B_MAX = 8'd120,      // Maximum blue (to reject magenta)
+    parameter RED_R_MIN = 8'd170,      // Minimum red channel value (lowered for camera)
+    parameter RED_G_MAX = 8'd100,      // Maximum green (to reject yellow)
+    parameter RED_B_MAX = 8'd100,      // Maximum blue (to reject magenta)
     
     // GREEN detection: R < R_MAX && G > G_MIN && B < B_MAX
-    parameter GREEN_R_MAX = 8'd120,    // Maximum red (to reject yellow)
-    parameter GREEN_G_MIN = 8'd150,    // Minimum green channel value
-    parameter GREEN_B_MAX = 8'd120,    // Maximum blue (to reject cyan)
+    parameter GREEN_R_MAX = 8'd100,    // Maximum red (to reject yellow)
+    parameter GREEN_G_MIN = 8'd170,    // Minimum green channel value
+    parameter GREEN_B_MAX = 8'd100,    // Maximum blue (to reject cyan)
     
     // BLUE detection: R < R_MAX && G < G_MAX && B > B_MIN
-    parameter BLUE_R_MAX = 8'd120,     // Maximum red (to reject magenta)
-    parameter BLUE_G_MAX = 8'd120,     // Maximum green (to reject cyan)
-    parameter BLUE_B_MIN = 8'd150,     // Minimum blue channel value
+    parameter BLUE_R_MAX = 8'd100,     // Maximum red (to reject magenta)
+    parameter BLUE_G_MAX = 8'd100,     // Maximum green (to reject cyan)
+    parameter BLUE_B_MIN = 8'd170,     // Minimum blue channel value
     
     // WHITE detection: R > R_MIN && G > G_MIN && B > B_MIN (all channels high)
     parameter WHITE_R_MIN = 8'd180,    // Minimum red for white
