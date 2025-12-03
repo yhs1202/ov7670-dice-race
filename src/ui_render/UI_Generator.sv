@@ -28,6 +28,7 @@ module UI_Generator (
 
     logic [11:0] intro_rgb_data;
     logic [7:0] game_r8, game_g8, game_b8;
+    logic finish_pixel_en;
 
     tile_position_mapper U_Tile_Pos_Mapper_P1 (
         .tile_idx(p1_pos),
@@ -67,7 +68,8 @@ module UI_Generator (
         .active_player(turn),
         .r            (game_r8),
         .g            (game_g8),
-        .b            (game_b8)
+        .b            (game_b8),
+        .finish_pixel_en(finish_pixel_en)
     );
 
     always_comb begin
@@ -81,7 +83,7 @@ module UI_Generator (
             ui_b      = intro_rgb_data[3:0];
             ui_enable = 1'b1;
         end else begin
-            if (y_pixel < 240) begin
+            if (y_pixel < 240 || finish_pixel_en) begin
                 ui_r      = game_r8[7:4];
                 ui_g      = game_g8[7:4];
                 ui_b      = game_b8[7:4];

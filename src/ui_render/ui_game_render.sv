@@ -19,7 +19,8 @@ module UI_Game_Renderer (
     input  logic       active_player,      // 0=Player1, 1=Player2
 
     // VGA 출력
-    output logic [7:0] r, g, b
+    output logic [7:0] r, g, b,
+    output logic       finish_pixel_en     // Finish 화면 픽셀 활성화 여부
 );
 
     // ========================================
@@ -142,11 +143,9 @@ module UI_Game_Renderer (
     // ========================================
     // Finish Screen 렌더러
     // ========================================
-    finish_text_renderer finish_inst (
-        .x(x),
-        .y(y),
-        .text_x(10'd294),
-        .text_y(10'd236),
+    finish_box_renderer finish_inst (
+        .pixel_x(x),
+        .pixel_y(y),
         .color(finish_color),
         .enable(finish_enable)
     );
@@ -186,6 +185,7 @@ module UI_Game_Renderer (
         r <= final_color.r;
         g <= final_color.g;
         b <= final_color.b;
+        finish_pixel_en <= (winner_valid && finish_enable);
     end
 
 endmodule
