@@ -13,7 +13,6 @@ module Camera_system (
 
     output logic       CAM1_sioc,   // SCL, top module Camera output
     input  logic       CAM1_siod,   // SDA
-    // output logic       CAM1_xclk,   // XCLK, top module Camera output
 
     // Camera 2 interface (Face)
     input  logic [7:0] CAM2_data,
@@ -23,7 +22,6 @@ module Camera_system (
 
     output logic       CAM2_sioc,   // SCL, top module Camera output
     input  logic       CAM2_siod,   // SDA
-    // output logic       CAM2_xclk,   // XCLK, top module Camera output
 
     // Module outputs except Camera Control signals
     output logic        pclk,           // Pixel clock (25MHz) generated from system clock (to CAM1/2 xclk, Color_Detector, Display_Overlay, UI_Generator)
@@ -52,9 +50,6 @@ module Camera_system (
     // CAM2_RGB_out is already assigned from frame buffer, just output it
 
     ///////////////////////////// Clock /////////////////////////////
-    // logic sys_clk;  // !!!!!!!!!!!!!!!!!!!!! RENAMED TO "pclk" !!!!!!!!!!!!!!!!!!!!
-    // assign CAM1_xclk = sys_clk;
-    // assign CAM2_xclk = sys_clk;
 
     pixel_clk_gen U_Pixel_Clk_Gen (
         .clk  (clk),
@@ -66,6 +61,10 @@ module Camera_system (
     logic                  CAM1_we;
     logic [ADDR_WIDTH-1:0] CAM1_wAddr;
     logic [          15:0] CAM1_wData;
+    logic                  CAM2_we;
+    logic [ADDR_WIDTH-1:0] CAM2_wAddr;
+    logic [          15:0] CAM2_wData;
+
     OV7670_Controller #(
         .IMG_WIDTH (IMG_WIDTH),
         .IMG_HEIGHT(IMG_HEIGHT)
@@ -83,9 +82,6 @@ module Camera_system (
         .wData(CAM1_wData)
     );
 
-    logic                  CAM2_we;
-    logic [ADDR_WIDTH-1:0] CAM2_wAddr;
-    logic [          15:0] CAM2_wData;
     OV7670_Controller #(
         .IMG_WIDTH (IMG_WIDTH),
         .IMG_HEIGHT(IMG_HEIGHT)
@@ -104,8 +100,6 @@ module Camera_system (
     );
 
     //////////////////////////// Storage ////////////////////////////
-    // logic [15:0] cam1_read_data;
-    // logic [15:0] cam2_read_data;
     logic [ADDR_WIDTH-1:0] vga_read_addr;
 
     frame_buffer #(
@@ -138,9 +132,6 @@ module Camera_system (
     /////////////////////////////////////////////////////////////////
 
     ////////////////////////// Output Path //////////////////////////
-    // logic DE;
-    // logic [9:0] x_pixel;
-    // logic [9:0] y_pixel;
 
     VGA_Syncher U_VGA_Syncher (
         .clk    (pclk),
