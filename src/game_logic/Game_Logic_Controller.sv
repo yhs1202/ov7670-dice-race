@@ -113,6 +113,7 @@ module Game_Logic_Controller (
         end else begin
             state <= next_state;
             turn_reg <= turn_next;
+            // event_flag <= 1;
 
             case (state)
                 S_IDLE: begin
@@ -180,7 +181,7 @@ module Game_Logic_Controller (
                             winner_valid <= 1;
                             winner_id <= 0;  // Player 1 wins
                         end
-                        else event_flag <= 4'd0;
+                        else event_flag <= 4'd1;
                     end else begin
                         // Player 2's turn - check p2_pos
                         if (p2_pos == 2) event_flag <= 4'd2;
@@ -195,7 +196,7 @@ module Game_Logic_Controller (
                             winner_valid <= 1;
                             winner_id <= 1;  // Player 2 wins
                         end
-                        else event_flag <= 4'd0;
+                        else event_flag <= 4'd1;
                     end
                 end
 
@@ -272,7 +273,7 @@ module Game_Logic_Controller (
             end
 
             S_START_EVENT: begin
-                if (!event_flag) begin
+                if (event_flag == 4'd1) begin
                     turn_next = ~turn_reg;
                     next_state = S_NEXT_TURN;
                 end else if (turn_done) begin

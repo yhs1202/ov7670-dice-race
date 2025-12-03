@@ -36,10 +36,10 @@ module DiceRace_System (
     // FND + LED Output
     output logic [15:0] led_output,
     output logic [ 3:0] fnd_com,
-    output logic [ 7:0] fnd_data,
+    output logic [ 7:0] fnd_data
 
     // Test Input for Image Filter
-    input logic [3:0] filter_sel
+    // input logic [3:0] filter_sel
 );
     /////////////////////////// Parameter ///////////////////////////
     localparam IMG_WIDTH = 160;
@@ -247,7 +247,7 @@ module DiceRace_System (
     ) U_Img_Filter (
         .clk       (clk),
         .reset     (reset),
-        .filter_sel(filter_sel),
+        .filter_sel(event_flag),
         .DE        (DE),
         .x_pixel   (x_pixel),
         .y_pixel   (y_pixel),

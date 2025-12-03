@@ -7,7 +7,6 @@ module Img_Filter #(
 ) (
     input  logic       clk,
     input  logic       reset,
-    // 000: Pass, 001: Mosaic, 010: ASCII, 011~111: Reserved
     input  logic [3:0] filter_sel,  // same with event_flag, Filter Selection
     // VGA Signals
     input  logic       DE,
