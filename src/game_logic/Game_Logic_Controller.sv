@@ -213,7 +213,7 @@ module Game_Logic_Controller (
                 // S_WIN: hold state
                 S_WIN: begin
                     // Game over effects can be added here if needed
-                    led_output_reg <= (winner_id == 0) ? 16'hF0F0 : 16'h0F0F; // indicate winner
+                    led_output_reg <= (winner_id == 0) ? 16'hFF00 : 16'h00FF; // indicate winner
                     event_flag <= 4'd10; // win event
                 end
 
