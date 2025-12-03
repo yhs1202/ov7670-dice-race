@@ -1,5 +1,6 @@
 VIVADO ?= vivado
 PROJ := $(notdir $(CURDIR))
+OUTDIR := out
 
 SOURCES := $(shell find src -type f \( -name '*.v' -o -name '*.sv' \) 2>/dev/null)
 XDC := $(wildcard constr/*.xdc)

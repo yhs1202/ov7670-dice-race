@@ -23,7 +23,7 @@ set board "digilentinc.com:basys3:part0:1.2" ;  # Basys-3 Board part
 set srcdir   "$proj_dir/src"
 set simdir   "$proj_dir/sim"
 set constrdir "$proj_dir/constr"
-set memdir   "$proj_dir"
+set memdir   "$proj_dir/src"
 set outdir   "$proj_dir/out"
 file mkdir $outdir
 # -------------------------------------------
