@@ -1,6 +1,7 @@
 # ============================================================
 # Vivado Simulation Script
 # Author : Hoseung Yoon
+# Last Modified : 2025.12.02
 # - proj_name = current directory name
 # - Expects src/ and constr/ subdirectories
 # ============================================================
@@ -15,10 +16,10 @@ if {[info exists ::env(TOP)]} {
     set top $::env(TOP)
 } else {
     # Top-level module name (edit this)
-    set top "top"                    ;# Top-level module name (edit this)
+    set top "DiceRace_System"                    ;# Top-level module name (edit this)
 }
 set tb_top "tb_$top"                 ;# Testbench top module name (edit this)
-set part "xc7a35ticsg324-1L"         ;# Device part (example: Basys-3)
+set board "digilentinc.com:basys3:part0:1.2" ;  # Basys-3 Board part
 set srcdir   "$proj_dir/src"
 set simdir   "$proj_dir/sim"
 set constrdir "$proj_dir/constr"
@@ -28,12 +29,11 @@ file mkdir $outdir
 # -------------------------------------------
 
 puts ">>> Building project: $proj_name"
-puts ">>> Part: $part"
 puts ">>> Top module: $top"
 puts ">>> Testbench module: $tb_top"
 
 # Create a non-project flow
-create_project $proj_name $outdir -part $part -force
+create_project $proj_name $outdir -force
 set_msg_config -id {Common 17-55} -new_severity {WARNING}
 
 proc get_all_files {dir pattern} {
@@ -82,17 +82,26 @@ if {[llength $xdc_files] > 0} {
 }
 
 # Add simulation files
-set tb_files_v [get_all_files $simdir tb_*.v]
+set tb_files_v [get_all_files $simdir *.v]
 if {[llength $tb_files_v] > 0} {
     add_files -fileset sim_1 $tb_files_v
 }
-set tb_files_sv [get_all_files $simdir tb_*.sv]
+set tb_files_sv [get_all_files $simdir *.sv]
 if {[llength $tb_files_sv] > 0} {
     add_files -fileset sim_1 $tb_files_sv
 }
 
 # Set simulation top module
 set_property top $tb_top [get_filesets sim_1]
+
+# Board part setting
+if {[llength [get_board_parts $board]] > 0} {
+    set_property board_part $board [current_project]
+} else {
+    puts ">>> Warning: Board part $board not found. Using default part."
+}
+
+puts ">>> Project $proj_name build completed."
 
 # Run simulation (uncomment to run)
 launch_simulation

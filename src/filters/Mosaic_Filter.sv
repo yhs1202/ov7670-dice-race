@@ -10,12 +10,8 @@ module Mosaic_Filter #(
     input  logic [9:0] x_local,
     input  logic [9:0] y_local,
     input  logic       filter_en,
-    input  logic [3:0] r_in,
-    input  logic [3:0] g_in,
-    input  logic [3:0] b_in,
-    output logic [3:0] r_out,
-    output logic [3:0] g_out,
-    output logic [3:0] b_out
+    input  logic [15:0] rgb565_in,  // RGB565: [15:11]=R, [10:5]=G, [4:0]=B
+    output logic [15:0] rgb565_out
 );
 
     logic [9:0] block_x;
@@ -33,20 +29,14 @@ module Mosaic_Filter #(
     logic [ADDR_W-1:0] mem_addr;
     assign mem_addr = (block_y * BLOCKS_X) + block_x;
 
-    logic [3:0] save_r[0:(BLOCKS_X * BLOCKS_Y)-1];
-    logic [3:0] save_g[0:(BLOCKS_X * BLOCKS_Y)-1];
-    logic [3:0] save_b[0:(BLOCKS_X * BLOCKS_Y)-1];
+    logic [15:0] save_rgb565[0:(BLOCKS_X * BLOCKS_Y)-1];
 
     always_ff @(posedge clk) begin
         if (filter_en && is_sample_point) begin
-            save_r[mem_addr] <= r_in;
-            save_g[mem_addr] <= g_in;
-            save_b[mem_addr] <= b_in;
+            save_rgb565[mem_addr] <= rgb565_in;
         end
     end
 
-    assign r_out = (filter_en) ? ((is_sample_point) ? r_in : save_r[mem_addr]) : r_in;
-    assign g_out = (filter_en) ? ((is_sample_point) ? g_in : save_g[mem_addr]) : g_in;
-    assign b_out = (filter_en) ? ((is_sample_point) ? b_in : save_b[mem_addr]) : b_in;
+    assign rgb565_out = (filter_en) ? ((is_sample_point) ? rgb565_in : save_rgb565[mem_addr]) : rgb565_in;
 
 endmodule

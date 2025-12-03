@@ -29,7 +29,8 @@ module Camera_system (
     output logic        pclk,           // Pixel clock (25MHz) generated from system clock (to CAM1/2 xclk, Color_Detector, Display_Overlay, UI_Generator)
     output logic [11:0] dice_RGB_out,   // Dice Camera output, connected to Display_Overlay input
     output logic [15:0] CAM1_RGB_out,   // For Color Detector
-    output logic [11:0] filter_RGB_out,   // Face Camera output, connected to Img_Filter input
+    output logic [11:0] filter_RGB_out,   // Face Camera output (RGB444), legacy support
+    output logic [15:0] CAM2_RGB_out,   // Face Camera RGB565 output for filters
     output logic        DE,             // From VGA_Syncher, to ISP modules input (Internal Signal)
     output logic [9:0]  x_pixel,        // From VGA_Syncher, to ISP modules input (Internal Signal)
     output logic [9:0]  y_pixel,        // From VGA_Syncher, to ISP modules input (Internal Signal)
@@ -43,12 +44,12 @@ module Camera_system (
     localparam ADDR_WIDTH = $clog2(IMG_WIDTH * IMG_HEIGHT);
 
     // RGB565 to RGB444 logic w/ dice_en and filter_en
-    logic [15:0] CAM2_RGB_out;
     bit dice_en = x_pixel < 320 && y_pixel >= 240 && y_pixel < 480;
     bit filter_en = x_pixel >= 320 && y_pixel >= 240 && y_pixel < 480;
 
     assign dice_RGB_out   = dice_en ? {CAM1_RGB_out[15:12], CAM1_RGB_out[10:7], CAM1_RGB_out[4:1]} : 12'h0;
     assign filter_RGB_out = filter_en ? {CAM2_RGB_out[15:12], CAM2_RGB_out[10:7], CAM2_RGB_out[4:1]} : 12'h0;
+    // CAM2_RGB_out is already assigned from frame buffer, just output it
 
     ///////////////////////////// Clock /////////////////////////////
     // logic sys_clk;  // !!!!!!!!!!!!!!!!!!!!! RENAMED TO "pclk" !!!!!!!!!!!!!!!!!!!!
