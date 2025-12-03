@@ -37,7 +37,7 @@ sim: scripts/sim.tcl
 
 bit: scripts/bit.tcl
 	@echo "Run Vivado bitstream generation"
-	$(VIVADO) -mode gui -source scripts/bit.tcl
+	$(VIVADO) -mode gui -source scripts/bit.tcl &
 
 clean:
 	@rm -rf $(OUTDIR) .Xil .cache .runs .sim .gen *.log *.jou *.str
