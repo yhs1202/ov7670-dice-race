@@ -26,9 +26,9 @@ module Color_Detector (
     // Output to Game Logic (from Color_Result_Manager)
     output logic [1:0] stable_color,  // 00=NONE, 01=RED, 10=GREEN, 11=BLUE
     output logic result_ready,  // Pulse: valid dice color detected
-    output logic        current_state_white   // Level: currently detecting WHITE background
-    //output logic turn_end,  // Pulse: white background (turn complete)
-    //output logic [15:0] stable_confidence  // Debug: confidence value
+    output logic turn_end,  // Pulse: white background (turn complete)
+    output logic        current_state_white,   // Level: currently detecting WHITE background
+    output logic [15:0] stable_confidence  // Debug: confidence value
 );
 
     //=========================================================================
@@ -96,18 +96,18 @@ module Color_Detector (
         .ROI_Y_END(ROI_Y_END),
         // Threshold tuning (adjusted for OV7670 camera characteristics)
         // More lenient thresholds for better detection
-        .RED_R_MIN(8'd140),  // Red detection
-        .RED_G_MAX(8'd130),
-        .RED_B_MAX(8'd130),
-        .GREEN_R_MAX(8'd130),  // Green detection
-        .GREEN_G_MIN(8'd140),
-        .GREEN_B_MAX(8'd130),
-        .BLUE_R_MAX(8'd130),  // Blue detection
-        .BLUE_G_MAX(8'd130),
-        .BLUE_B_MIN(8'd140),
-        .WHITE_R_MIN(8'd160),  // White detection (slightly lower for camera)
-        .WHITE_G_MIN(8'd160),
-        .WHITE_B_MIN(8'd160),
+        .RED_R_MIN(8'd170),  // Red detection
+        .RED_G_MAX(8'd100),
+        .RED_B_MAX(8'd100),
+        .GREEN_R_MAX(8'd90),  // Green detection
+        .GREEN_G_MIN(8'd210),
+        .GREEN_B_MAX(8'd90),
+        .BLUE_R_MAX(8'd100),  // Blue detection
+        .BLUE_G_MAX(8'd100),
+        .BLUE_B_MIN(8'd170),
+        .WHITE_R_MIN(8'd150),  // White detection (slightly lower for camera)
+        .WHITE_G_MIN(8'd150),
+        .WHITE_B_MIN(8'd150),
         .MIN_PIXEL_THRESHOLD(16'd200),  // Min pixels to accept R/G/B color
         .WHITE_PIXEL_THRESHOLD (16'd5000)   // ~35% of ROI must be white for turn_end
     ) U_ROI_Color_Detector (
@@ -147,9 +147,9 @@ module Color_Detector (
         .white_detected     (white_detected_raw),
         .stable_color       (stable_color),
         .result_ready       (result_ready),
-        //.turn_end           (turn_end),
-        .current_state_white(current_state_white)
-        //.stable_confidence  (stable_confidence)
+        .turn_end           (turn_end),
+        .current_state_white(current_state_white),
+        .stable_confidence  (stable_confidence)
     );
 
 endmodule
