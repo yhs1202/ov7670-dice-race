@@ -107,7 +107,7 @@ module SCCB_ControlUnit (
         case (state)
             IDLE: begin
                 I2C_en = 1'b0;
-                if (rom_addr <= 8'd75 && rom_data != 16'hFF_FF) begin
+                if (rom_addr <= 8'd73 && rom_data != 16'hFF_FF) begin
                     I2C_en = 1'b1;
                     state_next = START;
                 end
@@ -145,7 +145,7 @@ module SCCB_ControlUnit (
                 end
             end
             STOP: begin
-                if (rom_addr < 8'd75 && rom_data != 16'hFF_FF) begin
+                if (rom_addr < 8'd73 && rom_data != 16'hFF_FF) begin
                     state_next = START;
                 end else begin
                     I2C_en     = 1'b0;
