@@ -93,7 +93,7 @@ module Display_Overlay #(
     //=========================================================================
     // Color Indicator Area (top-left corner of frame buffer, outside ROI)
     //=========================================================================
-    localparam INDICATOR_X = 10'd10;
+    localparam INDICATOR_X = 10'd15;
     localparam INDICATOR_Y = 10'd10;
     localparam INDICATOR_SIZE = 10'd30;
     
