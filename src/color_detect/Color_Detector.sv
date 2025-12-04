@@ -26,9 +26,9 @@ module Color_Detector (
     // Output to Game Logic (from Color_Result_Manager)
     output logic [1:0] stable_color,  // 00=NONE, 01=RED, 10=GREEN, 11=BLUE
     output logic result_ready,  // Pulse: valid dice color detected
-    output logic turn_end,  // Pulse: white background (turn complete)
-    output logic        current_state_white,   // Level: currently detecting WHITE background
-    output logic [15:0] stable_confidence  // Debug: confidence value
+    output logic        current_state_white   // Level: currently detecting WHITE background
+    //output logic turn_end,  // Pulse: white background (turn complete)
+    //output logic [15:0] stable_confidence  // Debug: confidence value
 );
 
     //=========================================================================
@@ -147,9 +147,9 @@ module Color_Detector (
         .white_detected     (white_detected_raw),
         .stable_color       (stable_color),
         .result_ready       (result_ready),
-        .turn_end           (turn_end),
-        .current_state_white(current_state_white),
-        .stable_confidence  (stable_confidence)
+        //.turn_end           (turn_end),
+        .current_state_white(current_state_white)
+        //.stable_confidence  (stable_confidence)
     );
 
 endmodule
