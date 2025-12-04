@@ -96,6 +96,10 @@ module UI_Generator (
         .enable(label_enable)
     );
 
+    //  최종 UI 출력 로직   -> ui_endable =1 일 때만 ui_r,ui_g,ui_b 값이 출력
+    // 우선순위: Intro > Game > Camera Labels > Camera Border
+    // 카메라 테두리는 최하위 우선순위로, 다른 UI가 없을 때만 표시하도록 함
+    // 우선순위 구현 방법은 if else if else 구조로 가장 먼저 참이 되는 조건이 가장 높은 우선순위를 가짐
     always_comb begin
         ui_r = 0;
         ui_g = 0;
