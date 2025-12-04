@@ -81,7 +81,7 @@ module Color_Detector (
     logic        color_valid_raw;
     logic        white_detected_raw;
     logic [15:0] confidence_raw;
-    
+
     // Unused outputs from ROI_Color_Detector (for display overlay if needed)
     logic        in_roi;
     logic        is_red;
