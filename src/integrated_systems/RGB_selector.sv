@@ -16,13 +16,13 @@ module RGB_selector (
 
     always_comb begin
         if (!DE) begin
-            RGB_out = 12'h000;  // Black when DE is low
+            RGB_out = 12'h000;           // 0. 화면 표시 구간이 아니면 검정색
         end else if (ui_en) begin
-            RGB_out = ui_generator_out;  // UI Generator has highest priority
+            RGB_out = ui_generator_out;  // 1. UI가 켜져 있으면 무조건 UI 출력
         end else if ((x_pixel < 320) && (y_pixel < 480)) begin
-            RGB_out = dice_out;          // Dice Camera output in designated area
+            RGB_out = dice_out;          // 2. UI가 없고 왼쪽 화면이면 주사위 카메라 출력
         end else begin
-            RGB_out = img_filter_out;    // Image Filter output in designated area
+            RGB_out = img_filter_out;    // 3. 그 외 우측 화면이면 필터링된 카메라 출력
         end
     end
 endmodule
