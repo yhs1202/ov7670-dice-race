@@ -1,5 +1,7 @@
 `timescale 1ns / 1ps
 
+import color_pkg::*;
+
 module UI_Generator (
     input logic       clk,
     input logic       reset,
@@ -30,6 +32,21 @@ module UI_Generator (
     logic [7:0] game_r8, game_g8, game_b8;
     logic finish_pixel_en;
 
+    // Camera Labels
+    rgb_t label_color;
+    logic label_enable;
+
+    // Camera Border
+    logic is_camera_border;
+    // Border thickness: Horizontal 12px, Vertical 16px (12+4), Color Kirby Pink
+    assign is_camera_border = (y_pixel >= 240) && (
+        (y_pixel < 240 + 12) ||          // Top (12px)
+        (y_pixel >= 480 - 12) ||         // Bottom (12px)
+        (x_pixel < 16) ||                // Left (16px)
+        (x_pixel >= 640 - 16) ||         // Right (16px)
+        (x_pixel >= 312 && x_pixel < 328) // Middle separator (Center 320, Width 16)
+    );
+
     tile_position_mapper U_Tile_Pos_Mapper_P1 (
         .tile_idx(p1_pos),
         .x       (p1_target_x),
@@ -43,8 +60,8 @@ module UI_Generator (
     );
 
     UI_Intro_Renderer #(
-        .TITLE_LINE1("DICE"),
-        .TITLE_LINE2("RACE"),
+        .TITLE_LINE1("DICE RACE"),
+        .TITLE_LINE2(""),
         .SUBTITLE   ("2025 VGA PROJECT"),
         .MENU_ITEM1 ("START GAME"),
         .MENU_ITEM2 ("END GAME")
@@ -72,6 +89,13 @@ module UI_Generator (
         .finish_pixel_en(finish_pixel_en)
     );
 
+    camera_label_renderer U_Camera_Labels (
+        .pixel_x(x_pixel),
+        .pixel_y(y_pixel),
+        .color(label_color),
+        .enable(label_enable)
+    );
+
     always_comb begin
         ui_r = 0;
         ui_g = 0;
@@ -87,6 +111,16 @@ module UI_Generator (
                 ui_r      = game_r8[7:4];
                 ui_g      = game_g8[7:4];
                 ui_b      = game_b8[7:4];
+                ui_enable = 1'b1;
+            end else if (label_enable) begin
+                ui_r      = label_color.r[7:4];
+                ui_g      = label_color.g[7:4];
+                ui_b      = label_color.b[7:4];
+                ui_enable = 1'b1;
+            end else if (is_camera_border) begin
+                ui_r      = KIRBY_PINK.r[7:4];
+                ui_g      = KIRBY_PINK.g[7:4];
+                ui_b      = KIRBY_PINK.b[7:4];
                 ui_enable = 1'b1;
             end else begin
                 ui_r = 0;

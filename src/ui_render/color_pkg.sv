@@ -56,5 +56,10 @@ package color_pkg;
     parameter rgb_t DICE_GREEN     = '{r: 8'h00, g: 8'hFF, b: 8'h00};
     parameter rgb_t DICE_BLUE      = '{r: 8'h00, g: 8'h00, b: 8'hFF};
 
+    // ========================================
+    // 캐릭터 색상
+    // ========================================
+    parameter rgb_t KIRBY_PINK     = '{r: 8'hFF, g: 8'h99, b: 8'hCC};  // Kirby Pink
+
 endpackage
 

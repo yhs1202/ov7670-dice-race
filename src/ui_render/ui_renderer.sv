@@ -9,7 +9,7 @@ module UI_Intro_Renderer #(
     parameter MENU_ITEM2    = "END GAME",
     parameter HEADER_LEFT   = "PLAYER",
     parameter HEADER_WORLD  = "1-1",
-    parameter TOP_SCORE     = "TOP- 000000"
+    parameter TOP_SCORE     = "RELEASE - 251205"
 )(
     input  logic [9:0] pixel_x,
     input  logic [9:0] pixel_y,
@@ -40,7 +40,7 @@ module UI_Intro_Renderer #(
     localparam TITLE_BORDER     = 8;
     
     // Title Text Position (inside box)
-    localparam TITLE1_Y         = 120;
+    localparam TITLE1_Y         = 140;
     localparam TITLE2_Y         = 160;
     localparam SUBTITLE_Y       = 200;
     
@@ -191,16 +191,15 @@ module UI_Intro_Renderer #(
 
     // ===== Text Area Detection =====
     // Title Line 1
-    localparam TITLE1_LEN = 10;
+    localparam TITLE1_LEN = 9;
     localparam TITLE1_X = 320 - (TITLE1_LEN * CHAR_W / 2);
     assign in_title1_area = (pixel_x >= TITLE1_X && pixel_x < TITLE1_X + TITLE1_LEN * CHAR_W &&
                              pixel_y >= TITLE1_Y && pixel_y < TITLE1_Y + CHAR_H);
     
     // Title Line 2
-    localparam TITLE2_LEN = 10;
-    localparam TITLE2_X = 320 - (TITLE2_LEN * CHAR_W / 2);
-    assign in_title2_area = (pixel_x >= TITLE2_X && pixel_x < TITLE2_X + TITLE2_LEN * CHAR_W &&
-                             pixel_y >= TITLE2_Y && pixel_y < TITLE2_Y + CHAR_H);
+    localparam TITLE2_LEN = 0;
+    localparam TITLE2_X = 320;
+    assign in_title2_area = 1'b0;
     
     // Subtitle
     localparam SUBTITLE_LEN = 20;
@@ -222,7 +221,7 @@ module UI_Intro_Renderer #(
                               pixel_y >= MENU2_Y && pixel_y < MENU2_Y + CHAR_H);
     
     // Top Score
-    localparam SCORE_LEN = 12;
+    localparam SCORE_LEN = 16;
     localparam SCORE_X = 320 - (SCORE_LEN * CHAR_W / 2);
     assign in_score_area = (pixel_x >= SCORE_X && pixel_x < SCORE_X + SCORE_LEN * CHAR_W &&
                             pixel_y >= SCORE_Y && pixel_y < SCORE_Y + CHAR_H);
@@ -262,10 +261,15 @@ module UI_Intro_Renderer #(
             char_row = (rel_y % CHAR_H) / CHAR_SCALE;
             
             case (char_index)
-                0: char_code = TITLE_LINE1[8*4-1 -: 8];
-                1: char_code = TITLE_LINE1[8*3-1 -: 8];
-                2: char_code = TITLE_LINE1[8*2-1 -: 8];
-                3: char_code = TITLE_LINE1[8*1-1 -: 8];
+                0: char_code = TITLE_LINE1[8*9-1 -: 8];
+                1: char_code = TITLE_LINE1[8*8-1 -: 8];
+                2: char_code = TITLE_LINE1[8*7-1 -: 8];
+                3: char_code = TITLE_LINE1[8*6-1 -: 8];
+                4: char_code = TITLE_LINE1[8*5-1 -: 8];
+                5: char_code = TITLE_LINE1[8*4-1 -: 8];
+                6: char_code = TITLE_LINE1[8*3-1 -: 8];
+                7: char_code = TITLE_LINE1[8*2-1 -: 8];
+                8: char_code = TITLE_LINE1[8*1-1 -: 8];
                 default: char_code = 8'h20;
             endcase
             text_pixel = font_line[7 - char_col_in];
@@ -278,14 +282,10 @@ module UI_Intro_Renderer #(
             char_col_in = (rel_x % CHAR_W) / CHAR_SCALE;
             char_row = (rel_y % CHAR_H) / CHAR_SCALE;
             
-            case (char_index)
-                0: char_code = TITLE_LINE2[8*4-1 -: 8];
-                1: char_code = TITLE_LINE2[8*3-1 -: 8];
-                2: char_code = TITLE_LINE2[8*2-1 -: 8];
-                3: char_code = TITLE_LINE2[8*1-1 -: 8];
-                default: char_code = 8'h20;
-            endcase
-            text_pixel = font_line[7 - char_col_in];
+            // Since TITLE2_LEN is 0, this block should effectively be unreachable or empty
+            // But to satisfy synthesis range checks if TITLE_LINE2 is empty:
+            char_code = 8'h20;
+            text_pixel = 1'b0;
             
         end else if (in_subtitle_area) begin
             // Subtitle - 1x scale
@@ -387,17 +387,22 @@ module UI_Intro_Renderer #(
             char_row = (rel_y % CHAR_H) / CHAR_SCALE;
             
             case (char_index)
-                0:  char_code = TOP_SCORE[8*11-1 -: 8];
-                1:  char_code = TOP_SCORE[8*10-1 -: 8];
-                2:  char_code = TOP_SCORE[8*9-1 -: 8];
-                3:  char_code = TOP_SCORE[8*8-1 -: 8];
-                4:  char_code = TOP_SCORE[8*7-1 -: 8];
-                5:  char_code = TOP_SCORE[8*6-1 -: 8];
-                6:  char_code = TOP_SCORE[8*5-1 -: 8];
-                7:  char_code = TOP_SCORE[8*4-1 -: 8];
-                8:  char_code = TOP_SCORE[8*3-1 -: 8];
-                9:  char_code = TOP_SCORE[8*2-1 -: 8];
-                10: char_code = TOP_SCORE[8*1-1 -: 8];
+                0:  char_code = TOP_SCORE[8*16-1 -: 8];
+                1:  char_code = TOP_SCORE[8*15-1 -: 8];
+                2:  char_code = TOP_SCORE[8*14-1 -: 8];
+                3:  char_code = TOP_SCORE[8*13-1 -: 8];
+                4:  char_code = TOP_SCORE[8*12-1 -: 8];
+                5:  char_code = TOP_SCORE[8*11-1 -: 8];
+                6:  char_code = TOP_SCORE[8*10-1 -: 8];
+                7:  char_code = TOP_SCORE[8*9-1 -: 8];
+                8:  char_code = TOP_SCORE[8*8-1 -: 8];
+                9:  char_code = TOP_SCORE[8*7-1 -: 8];
+                10: char_code = TOP_SCORE[8*6-1 -: 8];
+                11: char_code = TOP_SCORE[8*5-1 -: 8];
+                12: char_code = TOP_SCORE[8*4-1 -: 8];
+                13: char_code = TOP_SCORE[8*3-1 -: 8];
+                14: char_code = TOP_SCORE[8*2-1 -: 8];
+                15: char_code = TOP_SCORE[8*1-1 -: 8];
                 default: char_code = 8'h20;
             endcase
             text_pixel = font_line[7 - char_col_in];

@@ -38,6 +38,10 @@ module UI_Game_Renderer (
     rgb_t qbox2_color, qbox4_color, qbox6_color, qbox8_color;
     logic qbox2_en, qbox4_en, qbox6_en, qbox8_en;
 
+    // Player Status UI Signals
+    rgb_t status_color;
+    logic status_en;
+
     // ========================================
     // 플레이어 컨트롤러
     // ========================================
@@ -151,6 +155,16 @@ module UI_Game_Renderer (
     );
 
     // ========================================
+    // Player Status UI 렌더러 (상단 하늘 영역)
+    // ========================================
+    player_status_renderer status_inst (
+        .pixel_x(x),
+        .pixel_y(y),
+        .color(status_color),
+        .enable(status_en)
+    );
+
+    // ========================================
     // 레이어 합성 (우선순위: finish > player1 > player2 > flag > dirt > grass > sky)
     // ========================================
     rgb_t final_color;
@@ -172,6 +186,9 @@ module UI_Game_Renderer (
         if (player2_en) final_color = player2_color;
         if (player1_en) final_color = player1_color;
         
+        // Player Status UI (플레이어 위, Finish 아래)
+        if (status_en)  final_color = status_color;
+
         // Finish 화면이 최상위 레이어
         if (winner_valid && finish_enable) begin
             final_color = finish_color;

@@ -37,9 +37,9 @@ module ROI_Color_Detector #(
     parameter RED_B_MAX = 8'd100,      // Maximum blue (to reject magenta)
     
     // GREEN detection: R < R_MAX && G > G_MIN && B < B_MAX
-    parameter GREEN_R_MAX = 8'd100,    // Maximum red (to reject yellow)
-    parameter GREEN_G_MIN = 8'd170,    // Minimum green channel value
-    parameter GREEN_B_MAX = 8'd100,    // Maximum blue (to reject cyan)
+    parameter GREEN_R_MAX = 8'd90,    // Maximum red (to reject yellow)
+    parameter GREEN_G_MIN = 8'd200,    // Minimum green channel value
+    parameter GREEN_B_MAX = 8'd90,    // Maximum blue (to reject cyan)
     
     // BLUE detection: R < R_MAX && G < G_MAX && B > B_MIN
     parameter BLUE_R_MAX = 8'd100,     // Maximum red (to reject magenta)
