@@ -100,7 +100,7 @@ module Color_Detector (
         .RED_G_MAX(8'd130),
         .RED_B_MAX(8'd130),
         .GREEN_R_MAX(8'd130),  // Green detection
-        .GREEN_G_MIN(8'd160),
+        .GREEN_G_MIN(8'd140),
         .GREEN_B_MAX(8'd130),
         .BLUE_R_MAX(8'd130),  // Blue detection
         .BLUE_G_MAX(8'd130),

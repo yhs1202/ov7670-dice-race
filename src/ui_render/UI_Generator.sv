@@ -42,8 +42,8 @@ module UI_Generator (
     assign is_camera_border = (y_pixel >= 240) && (
         (y_pixel < 240 + 12) ||          // Top (12px)
         (y_pixel >= 480 - 12) ||         // Bottom (12px)
-        (x_pixel < 16) ||                // Left (16px)
-        (x_pixel >= 640 - 16) ||         // Right (16px)
+        (x_pixel < 12) ||                // Left (12px)
+        (x_pixel >= 640 - 12) ||         // Right (12px)
         (x_pixel >= 312 && x_pixel < 328) // Middle separator (Center 320, Width 16)
     );
 
