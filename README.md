@@ -327,19 +327,19 @@ To demonstrate all filter effects, we forced the system to recognize only the **
 
 ## 8. Team Roles
 
-### ![kerby.png](/docs/readme_imgs/kerby.png) Junhoe Kim ([@junhoe99](/docs/readme_imgs/https://github.com/junhoe99)**)**
+### ![kerby.png](/docs/readme_imgs/kerby.png) Junhoe Kim ([@junhoe99](https://github.com/junhoe99))
 
 
 Color Detector Design, ASCII filter Design, voting algorithm, presentation
 
-### ![player2.png](/docs/readme_imgs/player2.png) Jiin Byeon ([@JIIN-BYEON](/docs/readme_imgs/https://github.com/JIIN-BYEON)**)**
+### ![player2.png](/docs/readme_imgs/player2.png) Jiin Byeon ([@JIIN-BYEON](https://github.com/JIIN-BYEON))
 
 SCCB Interface and Dual-Camera VGA controller Implementation, Invert, Mosaic, and Kaleidoscope filter Design
 
-### ![kerby.png](/docs/readme_imgs/kerby.png) Hoseung Yoon ([@yhs1202](/docs/readme_imgs/https://github.com/yhs1202))
+### ![kerby.png](/docs/readme_imgs/kerby.png) Hoseung Yoon ([@yhs1202](https://github.com/yhs1202))
 Game logic Design, top-level module integration, automation scripts, Git workflow environment setup
 
-### ![player2.png](/docs/readme_imgs/player2.png) Junwoo Jang ([@Junu18](/docs/readme_imgs/https://github.com/Junu18))
+### ![player2.png](/docs/readme_imgs/player2.png) Junwoo Jang ([@Junu18](https://github.com/Junu18))
 
 Sprite rendering, intro/game UI Design, player controller, visualization
 
