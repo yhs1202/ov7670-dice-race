@@ -308,22 +308,20 @@ The final output is determined by following priority, and handled by RGB_Selecto
 ### Intro Screen
 
 
----
-
 ![intro.gif](/docs/readme_imgs/intro.gif)
 
-### Filter activation
-
 ---
+
+### Filter activation
 
 **NOTE:**
 To demonstrate all filter effects, we forced the system to recognize only the **green dice (2 steps)** so that a single player would advance **two tiles per turn**, allowing us to record the full sequence smoothly.
 
 ![filter_demo.gif](/docs/readme_imgs/filter_demo.gif)
 
-### Winning screen
-
 ---
+
+### Winning screen
 
 ![finish.gif](/docs/readme_imgs/finish.gif)
 
