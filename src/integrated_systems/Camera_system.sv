@@ -1,6 +1,10 @@
 `timescale 1ns / 1ps
 
-module Camera_system (
+module Camera_system #(
+    parameter IMG_WIDTH  = 160,
+    parameter IMG_HEIGHT = 120,
+    parameter ADDR_WIDTH = $clog2(IMG_WIDTH * IMG_HEIGHT)
+) (
     // Global signals
     input logic clk,
     input logic reset,
@@ -32,13 +36,13 @@ module Camera_system (
     output logic [9:0]  x_pixel,        // From VGA_Syncher, to ISP modules input (Internal Signal)
     output logic [9:0]  y_pixel,        // From VGA_Syncher, to ISP modules input (Internal Signal)
     output logic        h_sync,         // From VGA_Syncher, top module VGA output
-    output logic        v_sync          // From VGA_Syncher, top module VGA output
+    output logic        v_sync,         // From VGA_Syncher, top module VGA output
+    
+    // CAM2 Frame Buffer external interface for Img_Filter
+    input  logic [ADDR_WIDTH-1:0] CAM2_ext_read_addr,  // External read address from Img_Filter
+    input  logic                  CAM2_ext_read_en,    // External read enable from Img_Filter
+    output logic [15:0]           CAM2_ext_read_data   // External read data to Img_Filter
 );
-
-    /////////////////////////// Parameter ///////////////////////////
-    localparam IMG_WIDTH = 160;
-    localparam IMG_HEIGHT = 120;
-    localparam ADDR_WIDTH = $clog2(IMG_WIDTH * IMG_HEIGHT);
 
     // RGB565 to RGB444 logic w/ dice_en and filter_en
     bit dice_en = x_pixel < 320 && y_pixel >= 240 && y_pixel < 480;
@@ -99,6 +103,8 @@ module Camera_system (
 
     //////////////////////////// Storage ////////////////////////////
     logic [ADDR_WIDTH-1:0] vga_read_addr;
+    logic [ADDR_WIDTH-1:0] CAM2_read_addr_muxed;  // Muxed read address for CAM2 frame buffer
+    logic                  CAM2_read_en_muxed;    // Muxed read enable for CAM2 frame buffer
 
     frame_buffer #(
         .IMG_WIDTH (IMG_WIDTH),
@@ -114,6 +120,10 @@ module Camera_system (
         .rData(CAM1_RGB_out)
     );
 
+    // Address multiplexing: external read has priority when enabled
+    assign CAM2_read_addr_muxed = CAM2_ext_read_en ? CAM2_ext_read_addr : vga_read_addr;
+    assign CAM2_read_en_muxed = CAM2_ext_read_en ? 1'b1 : 1'b1;  // Always enabled
+
     frame_buffer #(
         .IMG_WIDTH (IMG_WIDTH),
         .IMG_HEIGHT(IMG_HEIGHT)
@@ -123,10 +133,13 @@ module Camera_system (
         .wAddr(CAM2_wAddr),
         .wData(CAM2_wData),
         .rclk (pclk),
-        .oe   (1'b1),
-        .rAddr(vga_read_addr),
+        .oe   (CAM2_read_en_muxed),
+        .rAddr(CAM2_read_addr_muxed),
         .rData(CAM2_RGB_out)
     );
+    
+    // External read data output (same as CAM2_RGB_out when external read is enabled)
+    assign CAM2_ext_read_data = CAM2_RGB_out;
     /////////////////////////////////////////////////////////////////
 
     ////////////////////////// Output Path //////////////////////////

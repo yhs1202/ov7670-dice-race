@@ -15,7 +15,11 @@ module Img_Filter #(
     // Pixel Input (RGB565: 16-bit)
     input  logic [15:0] rgb565_in,
     // Pixel Output (RGB565: 16-bit)
-    output logic [15:0] rgb565_out
+    output logic [15:0] rgb565_out,
+    // External Frame Buffer Interface (from Camera_system CAM2)
+    output logic [ADDR_WIDTH-1:0] ext_read_addr,  // Read address to external frame buffer
+    output logic                  ext_read_en,    // Read enable to external frame buffer
+    input  logic [15:0]           ext_read_data   // Read data from external frame buffer
 );
 
     logic [9:0] local_x;
@@ -35,38 +39,21 @@ module Img_Filter #(
     end
 
     //=========================================================================
-    // Frame Buffer (shared by filters that need random access)
+    // External Frame Buffer Interface (connected to Camera_system CAM2)
     //=========================================================================
-    logic [ADDR_WIDTH-1:0] fb_write_addr;
     logic [ADDR_WIDTH-1:0] fb_read_addr;
     logic [ADDR_WIDTH-1:0] fb_read_addr_muxed;  // Muxed read address
-    logic [15:0] fb_write_data;  // RGB565: 16 bits
-    logic [15:0] fb_read_data;  // RGB565: 16 bits
-    logic fb_we;
+    logic [15:0] fb_read_data;  // RGB565: 16 bits from external frame buffer
     logic fb_oe;
 
-    // Calculate frame buffer address
-    assign fb_write_addr = (IMG_WIDTH * local_y) + local_x;
-    assign fb_read_addr  = (IMG_WIDTH * local_y) + local_x;
-
-    // Direct RGB565 storage
-    assign fb_write_data = rgb565_in;
-
-    // Frame buffer instance (RGB565 format - reuse existing frame_buffer)
-    frame_buffer #(
-        .IMG_WIDTH (IMG_WIDTH),
-        .IMG_HEIGHT(IMG_HEIGHT),
-        .ADDR_WIDTH(ADDR_WIDTH)
-    ) U_Filter_Frame_Buffer (
-        .wclk (clk),
-        .we   (fb_we),
-        .wAddr(fb_write_addr),
-        .wData(fb_write_data),
-        .rclk (clk),
-        .oe   (fb_oe),
-        .rAddr(fb_read_addr_muxed),
-        .rData(fb_read_data)
-    );
+    // Calculate frame buffer read address (for writing current pixel to buffer)
+    // Note: We don't write to frame buffer anymore, only read from external buffer
+    assign fb_read_addr = (IMG_WIDTH * local_y) + local_x;
+    
+    // Connect to external frame buffer
+    assign ext_read_addr = fb_read_addr_muxed;
+    assign ext_read_en = fb_oe;
+    assign fb_read_data = ext_read_data;
 
     //=========================================================================
     // ASCII Filter Instance
@@ -154,8 +141,7 @@ module Img_Filter #(
     assign fb_read_addr_muxed = kaleidoscope_selected ? kaleido_read_addr : 
                                 fb_read_addr;
 
-    // Update frame buffer write/read enable to include all filters that need it
-    assign fb_we = filter_en && kaleidoscope_selected;
+    // Update frame buffer read enable to include all filters that need it
     assign fb_oe = filter_en && kaleidoscope_selected;
 
     //=========================================================================

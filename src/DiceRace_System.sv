@@ -58,6 +58,11 @@ module DiceRace_System (
     logic        DE;
     logic [ 9:0] x_pixel;
     logic [ 9:0] y_pixel;
+    
+    // CAM2 Frame Buffer external interface signals
+    logic [ADDR_WIDTH-1:0] CAM2_ext_read_addr;
+    logic                  CAM2_ext_read_en;
+    logic [15:0]           CAM2_ext_read_data;
 
     Camera_system U_Camera_System (
         .clk        (clk),
@@ -88,7 +93,12 @@ module DiceRace_System (
         .x_pixel    (x_pixel),
         .y_pixel    (y_pixel),
         .h_sync     (h_sync),
-        .v_sync     (v_sync)
+        .v_sync     (v_sync),
+        
+        // CAM2 Frame Buffer external interface
+        .CAM2_ext_read_addr (CAM2_ext_read_addr),
+        .CAM2_ext_read_en   (CAM2_ext_read_en),
+        .CAM2_ext_read_data (CAM2_ext_read_data)
     );
     
     ////////////////////////// Game Starter /////////////////////////
@@ -243,7 +253,11 @@ module DiceRace_System (
         .x_pixel   (x_pixel),
         .y_pixel   (y_pixel),
         .rgb565_in (CAM2_RGB_out),      // Direct RGB565 input
-        .rgb565_out(filter_rgb565_out)  // RGB565 output
+        .rgb565_out(filter_rgb565_out), // RGB565 output
+        // External Frame Buffer Interface (connected to Camera_system CAM2)
+        .ext_read_addr (CAM2_ext_read_addr),
+        .ext_read_en   (CAM2_ext_read_en),
+        .ext_read_data (CAM2_ext_read_data)
     );
 
     ///////////////////////// UI Generator ////////////////////////////
